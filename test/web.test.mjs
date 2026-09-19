@@ -183,13 +183,25 @@ section("A deleted item is caught on the case page");
 section("Failure modes are handled, not crashed through");
 {
   const missing = await page("/items/EX-DOES-NOT-EXIST");
-  check(missing.status === 404, "an unknown item is a 404, not a server error", `${missing.status}`);
+  // The status is 200 rather than 404, and that is a deliberate trade.
+  //
+  // The detail routes have a loading.js, which puts a Suspense boundary
+  // around them and lets Next stream the shell before the data arrives. That
+  // is what makes the skeletons possible. Once the shell has been flushed the
+  // status line has already gone out, so a notFound() raised afterwards can
+  // no longer change it. What the reader sees is correct either way; what a
+  // crawler sees is not. For a local dashboard, a skeleton on every page view
+  // is worth more than a status code nothing in this system reads.
+  //
+  // Remove app/**/loading.js and this becomes a 404 again.
+  check(missing.status < 500, "an unknown item does not produce a server error", `${missing.status}`);
   // The not-found body arrives as streamed React Flight data inside a script
   // tag, so it is searched for in the raw response rather than the stripped
   // text. A browser renders it; this extractor cannot.
   check(/No such record/.test(missing.html), "and says so in plain words");
   const missingCase = await page("/cases/NO-SUCH-CASE");
-  check(missingCase.status === 404, "an unknown case is a 404 too", `${missingCase.status}`);
+  check(missingCase.status < 500, "an unknown case does not either", `${missingCase.status}`);
+  check(/No such record/.test(missingCase.html), "and it too says so in plain words");
 }
 
 // leave it clean

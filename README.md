@@ -110,6 +110,10 @@ npm run test:acceptance
 This runs the nine tests named in the test data pack, end to end, and leaves the system in the
 clean demo state. Expect 23 passed, 0 failed.
 
+**`TESTING.md` is the guide to all of it.** It is arranged as a ladder: each rung proves one
+claim the pitch makes, and working up it in order is the fastest way to understand the system.
+Start there rather than here if you are new to the project.
+
 ---
 
 ## Known install problems
