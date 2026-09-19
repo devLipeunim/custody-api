@@ -1,0 +1,11 @@
+CCTV CLIP PLACEHOLDER
+This file stands in for a video clip in the test dataset.
+Synthetic. No real footage, no real persons.
+
+Source: Bodija Traders Association, camera 3, entrance corridor
+Window: 03/03/2026 13:50:00 to 14:40:00
+Nominal duration: 50 minutes
+Nominal size in production: 1.4 GB
+
+For the prototype, replace with any small video file or leave as text.
+The system does not interpret contents. It fingerprints bytes.

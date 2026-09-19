@@ -1,0 +1,13 @@
+node_modules/
+.env
+.env.local
+*.log
+
+# Generated, never committed: 30MB of random bytes standing in for a phone
+# extraction. Recreate with testdata/scripts/make-large-file.sh or, on a
+# deployed service, npm run deploy:setup.
+testdata/evidence/case-c/handset-extraction.bin
+testdata/.pristine/
+
+# The deck is committed: it is a submission deliverable, it is 15KB, and a
+# judge should not have to run a build to read it. Regenerate with npm run deck.

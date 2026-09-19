@@ -1,0 +1,31 @@
+UNIVERSITY OF IBADAN
+FACULTY OF SCIENCE, DEPARTMENT OF COMPUTER SCIENCE
+CSC 312: OPERATING SYSTEMS
+SECOND SEMESTER EXAMINATION, 2025/2026 SESSION
+TIME ALLOWED: 3 HOURS
+
+INSTRUCTIONS: Answer QUESTION ONE and any THREE others.
+
+1a. Define a critical section. State the three requirements any solution to
+    the critical section problem must satisfy.                      (9 marks)
+1b. A system has four processes and three identical resources. Determine
+    whether deadlock is possible. Justify your answer.              (8 marks)
+1c. Distinguish between preemptive and non preemptive scheduling.   (8 marks)
+
+2a. Explain demand paging. Describe what happens on a page fault.   (10 marks)
+2b. Given the reference string 7 0 1 2 0 3 0 4 2 3 0 3 2 and three frames,
+    compute the number of page faults under FIFO and under LRU.     (15 marks)
+
+3a. Describe the producer consumer problem and give a semaphore solution.
+                                                                    (15 marks)
+3b. What is a race condition? Give one example from a file system.  (10 marks)
+
+4a. Compare contiguous, linked and indexed file allocation.         (12 marks)
+4b. Explain the purpose of an inode.                                (13 marks)
+
+5a. Describe the banker's algorithm and state its main limitation.  (15 marks)
+5b. Explain thrashing and how the working set model addresses it.   (10 marks)
+
+--- DOCUMENT CONTROL ---
+EMBARGOED UNTIL 20 APRIL 2026, 09:00
+This paper must not be reproduced or circulated before the release time.

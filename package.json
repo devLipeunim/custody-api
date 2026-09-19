@@ -1,0 +1,33 @@
+{
+  "name": "custody-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Custody: chain of custody API for digital evidence. ICSC 2026 Track H.",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "schema": "psql -U custody -d custody -h localhost -v ON_ERROR_STOP=1 -f schema.sql",
+    "seed": "node scripts/seed.js",
+    "reset": "npm run schema && npm run seed",
+    "test": "node test/device-parity.test.mjs && node test/api.test.mjs && node test/sync.test.mjs && node test/mobile.test.mjs",
+    "test:acceptance": "node test/acceptance.test.mjs",
+    "demo:reset": "./scripts/reset-demo.sh",
+    "deploy:setup": "node scripts/deploy-setup.js",
+    "test:api": "node test/api.test.mjs",
+    "test:web": "node test/web.test.mjs",
+    "test:mobile": "node test/mobile.test.mjs",
+    "deck": "node scripts/make-deck.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "pdfkit": "^0.17.1",
+    "pg": "^8.16.3",
+    "uuid": "^11.1.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,36 @@
+# Render blueprint for the Custody API.
+#
+# Note on the demo: the live presentation should run against the LOCAL
+# PostgreSQL on the presenting laptop, not this. The whole pitch is that
+# collection works when the network dies, and demonstrating offline first
+# architecture against a cloud database is a contradiction a judge will
+# notice. This deployment is for sharing the dashboard and the reports
+# outside the room.
+#
+# After the first deploy, run once from the Render shell:
+#   npm run deploy:setup
+#
+services:
+  - type: web
+    name: custody-api
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: custody-db
+          property: connectionString
+      - key: NODE_VERSION
+        value: "20"
+      # Left unset so the service uses the evidence pack vendored in this
+      # repository at ./testdata.
+      # - key: EVIDENCE_ROOT
+
+databases:
+  - name: custody-db
+    plan: free
+    databaseName: custody
+    user: custody

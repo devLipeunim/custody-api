@@ -1,0 +1,18 @@
+Faculty of Science, Departmental Shared Drive
+Permissions snapshot exported 14/04/2026 10:52 by Registry ICT
+
+PATH: /Exams/2025-2026/Second Semester/CSC312/
+  ACL entries: 41
+  Inherited from: /Exams/  (permissions last reviewed 2019)
+
+  stf/tokonjo        FULL CONTROL   granted 2021-09-02   last login 2026-04-12
+  stf/faluko         READ           granted 2023-01-14   last login 2026-04-13
+  stf/oadebayo       FULL CONTROL   granted 2019-08-20   ACCOUNT INACTIVE since 2022-11-30
+  stf/mibrahim       WRITE          granted 2020-03-11   ACCOUNT INACTIVE since 2024-06-15
+  grp/csc-postgrad   READ           granted 2019-08-20   members 63
+  grp/faculty-ict    FULL CONTROL   granted 2019-08-20   members 11
+  ... 35 further entries omitted from snapshot ...
+
+NOTES BY EXPORTING OFFICER
+Fourteen of the forty one entries belong to accounts that are inactive or
+belong to staff who have left. No review record exists after 2019.

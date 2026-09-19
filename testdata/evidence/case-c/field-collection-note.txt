@@ -1,0 +1,21 @@
+FIELD COLLECTION NOTE
+Case reference: CID-2026-0041
+Collecting officer: Sgt A. Adeyemi, badge NPF-22841
+Location: Bodija Market, Ibadan, Oyo State
+Date and time of collection: 03/03/2026, 14:32 (device clock)
+Network status at collection: NO SIGNAL
+
+ITEMS TAKEN
+1. One mobile handset, recovered from suspect at point of arrest.
+   Handset powered on, placed in airplane mode at 14:33 before extraction.
+   Logical extraction taken on site to portable drive. Size 512MB (partial).
+   Full physical extraction deferred to laboratory.
+
+2. CCTV clip obtained from trader association office, covering 13:50 to 14:40.
+   Provided on USB by association secretary, Mr S. Lawal.
+
+NOTES
+No network available at the scene for approximately five hours. All records
+kept on the collection device and uploaded on return to the station at 19:07.
+
+Signature: A. Adeyemi
