@@ -19,7 +19,8 @@
     "test:mobile": "node test/mobile.test.mjs",
     "deck": "node scripts/make-deck.js",
     "deck:pptx": "node scripts/make-deck-pptx.js",
-    "writeup": "node scripts/make-writeup.js"
+    "writeup": "node scripts/make-writeup.js",
+    "docx": "node scripts/make-docx.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -33,6 +34,7 @@
     "node": ">=20"
   },
   "devDependencies": {
+    "docx": "^9.7.1",
     "pptxgenjs": "^4.0.1"
   }
 }

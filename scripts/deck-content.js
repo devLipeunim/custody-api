@@ -88,9 +88,10 @@ export const DECK = [
     blocks: [
       { type: "title", lines: ["Architecture"] },
       { type: "diagram", name: "architecture", height: 224 },
-      { type: "lead", lines: ["One laptop. No cloud. Nothing paid for. Works with the network down."] },
+      { type: "lead", lines: ["One laptop, or hosted. Nothing paid for. Works with the network down."] },
     ],
-    notes: "Twenty seconds. Do not walk through every box.",
+    notes: "Twenty seconds. Do not walk through every box. The same code runs on a laptop or " +
+      "hosted; the dashboard on show is the hosted one.",
   },
   {
     kicker: "Power cuts and dead networks",
@@ -173,10 +174,12 @@ export const DECK = [
         ["Scale", "tested at 30MB, extrapolated, not a real extraction"],
         ["Per officer signing", "tied to a login, not to a person's key"],
         ["Storage", "change is proven, deletion is not prevented"],
-        ["Bulk compromise", "full server access could rebuild the chain"],
+        ["Bulk compromise", "single edits are caught, a full rewrite is not"],
       ] },
     ],
-    notes: "Deliver this confidently, not apologetically.",
+    notes: "Deliver this confidently, not apologetically. If pressed on the last row: the events " +
+      "table is append only and witnesses the fingerprint, so editing one record is reported. " +
+      "Defeating it means dropping the trigger and rewriting every table.",
   },
   {
     kicker: "If asked",
