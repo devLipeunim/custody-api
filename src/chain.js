@@ -37,8 +37,14 @@ export function caseEventHash({ prevHash, caseId, action, itemReference, itemRoo
  * fields, and two conditions are checked at every step: the recorded hash
  * matches what the contents produce, and prev_hash matches the previous
  * event's hash.
+ *
+ * Pass the item's current root hash to check a third: every event carries the
+ * fingerprint the item held when it was appended, so one that disagrees with
+ * the item's stored root means the root was edited after the fact. Without
+ * this, altering a file and updating items.root_hash to match would verify
+ * clean, because nothing else compares the two records of the fingerprint.
  */
-export function verifyChain(events) {
+export function verifyChain(events, rootHash = null) {
   let prev = ZERO_HASH;
   for (const event of events) {
     const expected = eventHash({
@@ -61,6 +67,13 @@ export function verifyChain(events) {
         integrity: "broken",
         breakAtSeq: event.seq,
         reason: "content_modified",
+      };
+    }
+    if (rootHash && event.file_hash && event.file_hash !== rootHash) {
+      return {
+        integrity: "broken",
+        breakAtSeq: event.seq,
+        reason: "fingerprint_contradicted",
       };
     }
     prev = event.event_hash;

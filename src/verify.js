@@ -56,7 +56,7 @@ export async function verifyItem(idOrReference, { runBy = null, record = true } 
   if (!item) return null;
 
   const events = await loadChain(item.id);
-  const chain = verifyChain(events);
+  const chain = verifyChain(events, item.root_hash);
 
   const expectedChunks = item.chunk_hashes;
 

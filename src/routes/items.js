@@ -38,7 +38,7 @@ items.get("/:id/chain", async (req, res) => {
   const item = await loadItem(req.params.id);
   if (!item) return res.status(404).json({ error: "item not found" });
   const events = await loadChain(item.id);
-  const chain = verifyChain(events);
+  const chain = verifyChain(events, item.root_hash);
   res.json({
     itemId: item.id,
     itemReference: item.reference,

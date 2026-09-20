@@ -160,6 +160,9 @@ export function buildReport({ item, events, verification, caseInfo }) {
       (verification.chainBreakReason === "content_modified"
         ? `Entry ${at + 1} no longer matches the record made when it was first written, which ` +
           `means its contents were changed after the fact.`
+        : verification.chainBreakReason === "fingerprint_contradicted"
+        ? `Entry ${at + 1} records a different fingerprint for the exhibit than the one now held ` +
+          `against it, which means the stored fingerprint was changed after collection.`
         : `Entry ${at + 1} does not follow from the entry before it, which means an entry was ` +
           `removed or inserted.`) +
       ` Everything recorded before that point remains verified. Nothing after it can be relied upon.`

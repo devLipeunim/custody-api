@@ -10,7 +10,7 @@
     "schema": "psql -U custody -d custody -h localhost -v ON_ERROR_STOP=1 -f schema.sql",
     "seed": "node scripts/seed.js",
     "reset": "npm run schema && npm run seed",
-    "test": "node test/device-parity.test.mjs && node test/api.test.mjs && node test/sync.test.mjs && node test/mobile.test.mjs",
+    "test": "node test/device-parity.test.mjs && node test/chain-tamper.test.mjs && node test/api.test.mjs && node test/sync.test.mjs && node test/mobile.test.mjs",
     "test:acceptance": "node test/acceptance.test.mjs",
     "demo:reset": "./scripts/reset-demo.sh",
     "deploy:setup": "node scripts/deploy-setup.js",
