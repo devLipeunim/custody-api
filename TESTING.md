@@ -255,9 +255,10 @@ Ask afterwards:
 - Is the evidence changed or not? How do you know?
 - Is there anything here you could not follow?
 
-Record what confused them and what changed in response. That goes on slide 11 and into the
-submission. **Do not invent the result.** An accurate "they did not understand the phrase X, so
-it became Y" is the only version of this worth reporting.
+Record what confused them and what changed in response, and put it in the submission. The deck
+held a slide for this result; it was removed rather than shown unfilled, so add one back if the
+test is run in time. **Do not invent the result.** An accurate "they did not understand the
+phrase X, so it became Y" is the only version of this worth reporting.
 
 ### 3c. Read the report yourself, out loud
 

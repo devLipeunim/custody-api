@@ -150,21 +150,6 @@ export const DECK = [
     notes: "Replace this slide with a photograph of the printed report in someone's hands.",
   },
   {
-    kicker: "We tested it on people",
-    blocks: [
-      { type: "title", lines: [
-        "We gave the report to someone",
-        "outside computer science.",
-      ] },
-      { type: "rows", rows: [
-        ["What confused them", "[ to complete ]"],
-        ["What we changed", "[ to complete ]"],
-      ] },
-    ],
-    notes: "Complete this with the real result before presenting. An accurate account of " +
-      "what a reader did not understand is the only version worth reporting.",
-  },
-  {
     kicker: "What we did not solve",
     blocks: [
       { type: "title", lines: ["Honest limits"] },
