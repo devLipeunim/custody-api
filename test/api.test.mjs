@@ -51,7 +51,14 @@ section("GET /api/actors");
 {
   const r = await get("/api/actors");
   check(r.status === 200, "200");
-  check(Array.isArray(r.body) && r.body.length === 8, "8 seeded officers", `${r.body.length}`);
+  // Asserted by badge rather than by count: this suite creates an officer on
+  // every run, so a total would only hold on a freshly reset database.
+  const badges = new Set(r.body.map((a) => a.badge_no));
+  const seeded = ["NPF-22841", "NPF-19003", "UI-ICT-014", "UI-REG-002",
+                  "UI-REG-009", "BNK-AUD-11", "BNK-AUD-03", "UI-REG-021"];
+  const missingBadges = seeded.filter((b) => !badges.has(b));
+  check(missingBadges.length === 0, "all 8 seeded officers present",
+    missingBadges.length ? `missing ${missingBadges.join(", ")}` : "");
   has(r.body[0], ["id", "full_name", "rank_title", "badge_no", "active"], "contract: actor row");
   check(!JSON.stringify(r.body).includes("password"), "no credentials leak in the actor list");
 }
@@ -77,7 +84,11 @@ section("GET /api/cases  (dashboard case list)");
 {
   const r = await get("/api/cases");
   check(r.status === 200, "200");
-  check(r.body.length === 3, "3 seeded cases", `${r.body.length}`);
+  const refs = new Set(r.body.map((c) => c.reference));
+  const seededCases = ["UI-DISC-2026-014", "FRD-2026-088", "CID-2026-0041"];
+  const missingCases = seededCases.filter((c) => !refs.has(c));
+  check(missingCases.length === 0, "all 3 seeded cases present",
+    missingCases.length ? `missing ${missingCases.join(", ")}` : "");
   has(r.body[0], [
     "id", "reference", "title", "forum", "opened_at", "chain_head",
     "item_count", "total_bytes", "altered_count", "broken_chain_count", "last_verified_at",
