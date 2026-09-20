@@ -257,15 +257,24 @@ body(
 const range = doc.bufferedPageRange();
 for (let i = 0; i < range.count; i += 1) {
   doc.switchToPage(i);
+  // The footer sits below the bottom margin. Without clearing that margin
+  // pdfkit treats the write as overflow and appends a blank page for every
+  // footer, so the margin is dropped per page after switching to it.
+  doc.page.margins.bottom = 0;
   doc.font("Times-Roman").fontSize(7.5).fillColor(MUTED)
-     .text("Custody  .  Team Captain  .  Track H", M, doc.page.height - 34, { width: W / 2 });
+     .text("Custody  .  Team Captain  .  Track H", M, doc.page.height - 34,
+           { width: W / 2, lineBreak: false });
   doc.font("Times-Roman").fontSize(7.5).fillColor(MUTED)
-     .text(`${i + 1} of ${range.count}`, M + W / 2, doc.page.height - 34, { width: W / 2, align: "right" });
+     .text(`${i + 1} of ${range.count}`, M + W / 2, doc.page.height - 34,
+           { width: W / 2, align: "right", lineBreak: false });
 }
-if (range.count > MAX_PAGES) {
-  console.error(`Write-up ran to ${range.count} pages, the limit is ${MAX_PAGES}.`);
+// Counted after the footer loop, not before it: writing a footer can itself
+// append a page, and a count taken earlier would not show it.
+const pages = doc.bufferedPageRange().count;
+if (pages > MAX_PAGES) {
+  console.error(`Write-up ran to ${pages} pages, the limit is ${MAX_PAGES}.`);
   process.exitCode = 1;
 }
 doc.end();
 console.log(`Write-up written to ${OUT}`);
-console.log(`  ${range.count} of a maximum ${MAX_PAGES} pages`);
+console.log(`  ${pages} of a maximum ${MAX_PAGES} pages`);
