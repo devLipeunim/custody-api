@@ -8,6 +8,7 @@ import express from "express";
 import cors from "cors";
 import os from "node:os";
 import { pool } from "./db.js";
+import { autoProvision } from "./bootstrap.js";
 import { cases } from "./routes/cases.js";
 import { items } from "./routes/items.js";
 import { custody } from "./routes/custody.js";
@@ -48,6 +49,15 @@ function lanAddress() {
     }
   }
   return "127.0.0.1";
+}
+
+// Provision before accepting traffic, so the first request does not arrive at
+// an empty database. Failure is logged rather than fatal: a running service
+// reporting its state is more useful than one that refuses to start.
+try {
+  await autoProvision();
+} catch (err) {
+  console.error("Provisioning failed:", err.message);
 }
 
 app.listen(PORT, "0.0.0.0", () => {

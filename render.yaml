@@ -1,14 +1,12 @@
 # Render blueprint for the Custody API.
 #
-# Note on the demo: the live presentation should run against the LOCAL
-# PostgreSQL on the presenting laptop, not this. The whole pitch is that
-# collection works when the network dies, and demonstrating offline first
-# architecture against a cloud database is a contradiction a judge will
-# notice. This deployment is for sharing the dashboard and the reports
-# outside the room.
+# The service provisions itself on start: if the schema is absent, no cases
+# are present, or the generated evidence file is missing, it loads the schema
+# and seeds before accepting traffic. No shell access is required, which the
+# free plan does not provide. Set AUTO_PROVISION=false to disable.
 #
-# After the first deploy, run once from the Render shell:
-#   npm run deploy:setup
+# Demonstrations should run against a local database. This deployment exists
+# to share the dashboard and the reports.
 #
 services:
   - type: web
@@ -25,6 +23,9 @@ services:
           property: connectionString
       - key: NODE_VERSION
         value: "20"
+      # Set to false to disable provisioning on start.
+      # - key: AUTO_PROVISION
+      #   value: "false"
       # Left unset so the service uses the evidence pack vendored in this
       # repository at ./testdata.
       # - key: EVIDENCE_ROOT

@@ -222,15 +222,20 @@ script.
 
 ## Deployment
 
-`render.yaml` provisions a web service and a PostgreSQL instance. After the first deploy:
+`render.yaml` provisions a web service and a PostgreSQL instance. No further action is needed
+after the first deploy.
 
-```bash
-npm run deploy:setup    # generates the large file, loads the schema, seeds
-```
+The service provisions itself on start. If the schema is absent, no cases are present, or the
+generated evidence file is missing, it loads the schema and seeds before accepting traffic.
+This runs without shell access, which Render's free plan does not provide. Set
+`AUTO_PROVISION=false` to disable it, or run `npm run deploy:setup` manually where a shell is
+available.
 
 The evidence pack is vendored at `testdata/`, so a deployed instance can verify without
-depending on anything outside its checkout. Render's filesystem is ephemeral: re-run
-`deploy:setup` after a redeploy. The chain itself lives in PostgreSQL and survives.
+depending on anything outside its checkout. The 30MB stand-in is generated rather than
+committed, and a host with an ephemeral filesystem loses it on restart while the database
+persists. Regenerating it alone would produce bytes that no longer match the stored
+fingerprints, so its absence triggers a full reseed and the two stay consistent.
 
 Demonstrations should run against a local database. Showing offline first architecture against
 a hosted one is a contradiction.
