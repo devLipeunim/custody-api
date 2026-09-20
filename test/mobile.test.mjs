@@ -1,10 +1,7 @@
-// The field app against the real API.
+// The field app's payload builder against the live API.
 //
-// This imports the Expo app's OWN payload builder (hackathonMobile/src/
-// payload.js) rather than a copy of it, feeds it rows shaped exactly as the
-// device's SQLite tables hold them, and posts the result to the running
-// server. If the phone and the server ever disagree about a field name, this
-// fails here rather than in front of a judge.
+// Imports the Expo app's own module rather than a copy, feeds it rows shaped
+// as the device's SQLite tables hold them, and posts the result.
 //
 // Usage: node test/mobile.test.mjs      (the API must be running)
 
@@ -15,9 +12,7 @@ import { fileURLToPath } from "node:url";
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const TESTDATA = process.env.EVIDENCE_ROOT || path.join(REPO, "testdata");
 
-// The field app is a sibling repository. Point MOBILE_REPO at it if it is
-// checked out somewhere else. Imported rather than copied on purpose: a copy
-// would pass this suite forever while the real app drifted away from it.
+// Sibling repository. Set MOBILE_REPO if checked out elsewhere.
 const MOBILE_REPO = process.env.MOBILE_REPO || path.resolve(REPO, "../hackathonMobile");
 const { buildSyncPayload } = await import(
   path.join(MOBILE_REPO, "src/payload.js")
@@ -74,8 +69,7 @@ section("The three read endpoints the app calls");
 // ===========================================================================
 section("A scene with no signal, then a sync");
 {
-  // What the device actually holds after sealing: SQLite rows, with
-  // chunk_hashes stored as JSON text and the device clock as an ISO string.
+  // As the device holds them: chunk_hashes as JSON text, times as ISO.
   const FILE = path.join(TESTDATA, "evidence/case-c/cctv-clip-placeholder.txt");
   const bytes = readFileSync(FILE);
   const chunkHashes = [shaBytes(bytes)];
@@ -128,16 +122,15 @@ section("A scene with no signal, then a sync");
   const gapHours = (new Date(sealed.sealedAt) - new Date(collectedAt)) / 3600000;
   check(gapHours > 2.5, "the offline gap survives the round trip", `${gapHours.toFixed(2)}h`);
 
-  // An item sealed in the field has a fingerprint but no exhibit yet. That
-  // is a distinct state from a file that was in the store and vanished, and
-  // the two must never be reported the same way.
+  // Sealed in the field: a fingerprint with no exhibit yet, which is distinct
+  // from a file that was in the store and is gone.
   const v = await get(`/api/items/${reference}/verify`);
   check(v.body.fileIntegrity === "awaiting_file",
     "before deposit the item is awaiting its exhibit, not missing", v.body.fileIntegrity);
   check(v.body.expectedRootHash === rootHash, "and the stored root is the one the phone computed");
   check(v.body.chainIntegrity === "intact", "the custody chain stands regardless");
 
-  // Deposit the exhibit, which is a separate act by a separate person.
+  // Depositing the exhibit is a separate act.
   const dep = await post(`/api/items/${reference}/deposit`, {
     storagePath: "evidence/case-c/cctv-clip-placeholder.txt",
     actorRef: "NPF-19003",
@@ -151,7 +144,7 @@ section("A scene with no signal, then a sync");
   check(v2.body.actualRootHash === rootHash,
     "the hash computed on the handset equals the hash computed on the server");
 
-  // Removing it afterwards is a different statement entirely.
+
   const chainAfter = await get(`/api/items/${reference}/chain`);
   check(chainAfter.body.events.some((e) => e.note?.includes("deposited") || e.note?.includes("received")),
     "the deposit is in the custody record, not a silent column update");
@@ -189,7 +182,7 @@ section("An empty queue, which is the common case");
 
 section("What the app does when things are wrong");
 {
-  // a phone whose merkle root disagrees with its own chunks
+  // a root that disagrees with its own chunk hashes
   const bad = {
     local_id: "x", reference: `EX-FIELD-BAD-${stamp}`, case_ref: "CID-2026-0041",
     description: "x", file_name: "x.txt", file_size_bytes: 10, mime_type: "text/plain",
@@ -201,7 +194,7 @@ section("What the app does when things are wrong");
   check(r.status === 409, "an inconsistent fingerprint fails the whole batch", `${r.status}`);
   check(r.body.code === "ROOT_MISMATCH", "with a code the app can show", r.body.code);
 
-  // an unknown case: rejected, but the batch is not poisoned
+  // an unknown case is rejected without failing the batch
   const unknown = { ...bad, reference: `EX-FIELD-UC-${stamp}`, case_ref: "NO-SUCH-CASE",
     root_hash: sha(sha("a") + sha("b")) };
   const r2 = await post("/api/custody/sync", buildSyncPayload("field-phone-07", [unknown], []));
@@ -210,7 +203,7 @@ section("What the app does when things are wrong");
   check(typeof r2.body.rejected[0].error === "string",
     "with a message the app can put in sync_error", r2.body.rejected[0]?.error);
 
-  // an unreachable server is what airplane mode looks like
+  // an unreachable server
   let refused = false;
   try {
     await fetch("http://127.0.0.1:9/api/health", { signal: AbortSignal.timeout(2000) });

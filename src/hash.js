@@ -1,17 +1,9 @@
-// Chunked hashing and the Merkle tree.
+// Chunked hashing and the Merkle tree over the chunk hashes.
 //
-// We never hash a large evidence file as one blob. The file is read in 4MB
-// pieces, each piece is hashed, and a binary tree is built over those chunk
-// hashes. Three things follow from this and each one is a claim we make in
-// the pitch:
-//
-//   1. Memory use stays flat as the file grows, because we never hold the
-//      whole file at once. A 100GB extraction takes longer, not more memory.
-//   2. When a file changes we can say WHICH chunk changed, and therefore
-//      which byte range. "Bytes 4,194,304 to 8,388,607 were altered" is far
-//      more useful in a hearing than "the hash does not match".
-//   3. Verification can be paused and resumed, because chunk hashes are
-//      independent of each other.
+// Files are hashed in fixed size pieces rather than whole. Memory use stays
+// flat as the file grows, a change can be located to a single chunk and so to
+// a byte range, and verification can be resumed because chunk hashes are
+// independent of one another.
 
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
@@ -25,12 +17,11 @@ export function sha256(input) {
 }
 
 /**
- * Hash a file in fixed size chunks, streaming.
+ * Hash a file in fixed size chunks.
  *
- * The stream's highWaterMark is a hint, not a guarantee, so we cannot assume
- * one buffer equals one chunk. We carry a running hash across buffer
- * boundaries and only close it off when exactly chunkSize bytes have gone in.
- * This is the part that makes the memory claim true.
+ * highWaterMark is a hint, not a guarantee, so a buffer does not correspond to
+ * a chunk. The running hash is carried across buffer boundaries and closed off
+ * only once exactly chunkSize bytes have been written to it.
  */
 export async function hashChunks(path, chunkSize = CHUNK_SIZE, onProgress) {
   const hashes = [];
@@ -96,11 +87,9 @@ export async function fingerprintFile(path, chunkSize = CHUNK_SIZE, onProgress) 
 }
 
 /**
- * Compare the chunk hashes recorded at collection against the chunk hashes
- * observed now, and localise the change.
- *
- * A file that grew or shrank shows up as added or removed chunk indices,
- * which is why we compare over the longer of the two lists.
+ * Compare recorded chunk hashes against observed ones and localise the change.
+ * Compared over the longer of the two lists, so a file that grew or shrank
+ * surfaces as added or removed chunk indices.
  */
 export function compareChunks(expected, actual, chunkSize = CHUNK_SIZE) {
   const altered = [];

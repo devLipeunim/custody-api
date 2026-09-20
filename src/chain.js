@@ -1,9 +1,8 @@
-// The custody chain: beads knotted onto a string.
+// The custody chain.
 //
-// Every custody event stores the hash of the event before it. Change any
-// event in the middle and every hash after it breaks, and we can point at
-// exactly where. This is the entire cryptographic content of the custody
-// trail and it is about fifteen lines.
+// Every custody event stores the hash of the event before it, so altering an
+// event invalidates every hash after it and the first failure locates the
+// change.
 
 import { sha256, ZERO_HASH } from "./hash.js";
 
@@ -15,8 +14,8 @@ function iso(value) {
 }
 
 /**
- * The link. Order and separator are fixed forever: change either one and
- * every chain ever written becomes unverifiable.
+ * Field order and separator are part of the format. Changing either
+ * invalidates every chain already written.
  */
 export function eventHash({ prevHash, itemId, actorId, action, deviceTime, fileHash }) {
   return sha256(
@@ -24,7 +23,7 @@ export function eventHash({ prevHash, itemId, actorId, action, deviceTime, fileH
   );
 }
 
-/** The case level equivalent, so that deleting a whole item is detectable. */
+/** Case level equivalent, which makes deletion of an entire item detectable. */
 export function caseEventHash({ prevHash, caseId, action, itemReference, itemRootHash, deviceTime }) {
   return sha256(
     [prevHash, caseId, action, itemReference, itemRootHash, iso(deviceTime)].join("|")
@@ -32,14 +31,12 @@ export function caseEventHash({ prevHash, caseId, action, itemReference, itemRoo
 }
 
 /**
- * Recompute a chain from scratch and report the first break.
+ * Recompute a chain from its events and report the first break.
  *
- * We deliberately do not trust any stored event_hash. We recompute every one
- * of them from the event's own fields and check two things at each step:
- * that the recorded hash matches what the contents produce, and that the
- * event's prev_hash matches the previous event's hash. The first failure is
- * reported with the reason, because "broken at seq 2" is what makes the
- * timeline render a visible break at the right link.
+ * Stored event hashes are not trusted. Each is recomputed from the event's own
+ * fields, and two conditions are checked at every step: the recorded hash
+ * matches what the contents produce, and prev_hash matches the previous
+ * event's hash.
  */
 export function verifyChain(events) {
   let prev = ZERO_HASH;
@@ -56,14 +53,14 @@ export function verifyChain(events) {
       return {
         integrity: "broken",
         breakAtSeq: event.seq,
-        reason: "link_mismatch", // this event does not point at the one before it
+        reason: "link_mismatch",
       };
     }
     if (event.event_hash !== expected) {
       return {
         integrity: "broken",
         breakAtSeq: event.seq,
-        reason: "content_modified", // the event's contents no longer produce its hash
+        reason: "content_modified",
       };
     }
     prev = event.event_hash;
@@ -72,10 +69,8 @@ export function verifyChain(events) {
 }
 
 /**
- * Verify a case level chain and additionally report items the chain records
- * but which no longer exist in the items table. That is how an outright
- * deletion is caught: the bead is gone, but the knot it was tied into
- * remains.
+ * Verify a case level chain, additionally reporting items the chain records
+ * that no longer exist in the items table.
  */
 export function verifyCaseChain(caseEvents, existingItemReferences) {
   let prev = ZERO_HASH;

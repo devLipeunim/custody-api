@@ -1,9 +1,7 @@
-// The nine tests named in the test data pack's README, run end to end.
+// The nine tests named in the test data pack, run end to end.
 //
-// This resets the demo, runs every check the pack specifies, and leaves the
-// system in the clean demo state. Run it before every rehearsal and once more
-// before presenting. Test 8 is the phone and cannot be automated from here;
-// it is listed as a manual step at the end.
+// Resets the demo, runs every check the pack specifies, and leaves the system
+// in a clean state. Test 8 requires a handset and is listed as a manual step.
 //
 // Usage: node test/acceptance.test.mjs     (the API must be running)
 
@@ -55,13 +53,13 @@ console.log("\nTest 3  tamper the 30MB extraction at byte 21,000,000, verify EX-
   check(v.alteredByteRange?.start === 20971520 && v.alteredByteRange?.end === 25165823,
     "byte range named", `${v.alteredByteRange?.start} to ${v.alteredByteRange?.end}`);
   check(v.chainIntegrity === "intact", "chain unaffected by a file change", v.chainIntegrity);
-  // put it back so the demo starts clean
+  // restore
   sh("node", ["scripts/tamper-file.js", "evidence/case-c/handset-extraction.bin", "21000000"], TESTDATA);
 }
 
 console.log("\nTest 4  edit a custody event directly in the database");
 {
-  // the guard must bite before we deliberately disable it
+  // the guard must refuse before it is deliberately disabled
   let blocked = false;
   try {
     sh(PSQL, ["-U", "custody", "-d", "custody", "-h", "localhost", "-c",
@@ -97,7 +95,7 @@ console.log("\nTest 6 and 7  reports");
     check(res.ok && buf.subarray(0, 5).toString() === "%PDF-",
       `${label} report is a PDF`, `${buf.length} bytes`);
   }
-  // the offline gap must reach the page, not be quietly dropped
+  // the offline gap must survive to the page
   const item = await get("/api/items/EX-2026-0041");
   const gap = (new Date(item.sealed_at) - new Date(item.collected_at)) / 3600000;
   check(gap > 4.5 && gap < 5, "EX-2026-0041 carries the five hour offline gap", `${gap.toFixed(2)}h`);

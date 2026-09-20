@@ -1,10 +1,8 @@
-// Writing to the chain: sealing an item and appending custody events.
+// Write path: sealing items and appending custody events.
 //
-// One rule governs everything here. The server never trusts a hash supplied
-// by a client. It recomputes every event hash from the event's own fields,
-// and if the client sent a hash that disagrees, the whole batch is rejected
-// and flagged. A field device is a device in someone's hand; its arithmetic
-// is not evidence.
+// Hashes supplied by a client are never trusted. Every event hash is
+// recomputed from the event's own fields, and a client hash that disagrees
+// rejects the batch.
 
 import { v4 as uuidv4 } from "uuid";
 import { many, tx } from "./db.js";
@@ -24,10 +22,8 @@ async function resolveActor(client, ref) {
 }
 
 /**
- * Append one custody event to an item's chain.
- *
- * The item row is locked for the duration so that two devices syncing at the
- * same moment cannot both claim the same sequence number and fork the chain.
+ * Append one custody event to an item's chain. The item row is locked so that
+ * concurrent syncs cannot claim the same sequence number and fork the chain.
  */
 export async function appendEvent(client, { itemId, actorRef, action, note, deviceTime, correctsEvent, clientEventHash }) {
   if (!ACTIONS.has(action)) throw Object.assign(new Error(`unknown action '${action}'`), { status: 400 });
@@ -52,8 +48,7 @@ export async function appendEvent(client, { itemId, actorRef, action, note, devi
     prevHash, itemId, actorId, action, deviceTime: device, fileHash: item.root_hash,
   });
 
-  // The client may send its own computed hash. We do not use it; we compare
-  // against ours and reject on disagreement.
+  // A client supplied hash is compared against the server's, never used.
   if (clientEventHash && clientEventHash !== hash) {
     throw Object.assign(
       new Error(`event hash mismatch for item ${itemId} seq ${seq}: client and server disagree`),
@@ -75,13 +70,12 @@ export async function appendEvent(client, { itemId, actorRef, action, note, devi
 }
 
 /**
- * Seal a new evidence item.
+ * Seal a new evidence item from metadata alone.
  *
- * Note what is NOT here: the file itself. The field app hashes on device and
- * sends only metadata — root hash, ordered chunk hashes, size, description,
- * collector, timestamps. This sidesteps request body limits entirely and is
- * closer to how real evidence handling works, where the exhibit goes to the
- * store and the paperwork goes to the registry.
+ * The file is not uploaded. The device hashes on collection and sends the root
+ * hash, ordered chunk hashes, size, collector and timestamps, which avoids
+ * request body limits and mirrors evidence handling, where the exhibit and the
+ * paperwork travel separately.
  */
 export async function sealItem(client, payload) {
   const {
@@ -94,9 +88,8 @@ export async function sealItem(client, payload) {
     throw Object.assign(new Error("chunkHashes is required and must be non-empty"), { status: 400 });
   }
 
-  // Recompute the Merkle root from the chunk hashes the device sent. If the
-  // device's root disagrees with the tree its own chunks produce, the record
-  // is internally inconsistent and we refuse it.
+  // A root that disagrees with the tree its own chunk hashes produce is
+  // internally inconsistent and is refused.
   const computedRoot = merkleRoot(chunkHashes);
   if (rootHash && rootHash !== computedRoot) {
     throw Object.assign(
@@ -115,10 +108,8 @@ export async function sealItem(client, payload) {
   const actorId = await resolveActor(client, collectedBy);
   if (!actorId) throw Object.assign(new Error(`unknown collector '${collectedBy}'`), { status: 400 });
 
-  // A device that syncs the same item twice must not create it twice.
-  // This must run on the transaction's client, not the pool: within a sync
-  // batch the item may have been created moments ago and not yet committed,
-  // and a pool connection cannot see that.
+  // Runs on the transaction client, not the pool: within a sync batch the item
+  // may have been created moments ago and not yet committed.
   const { rows: dupRows } = await client.query(
     `SELECT * FROM items WHERE reference = $1`, [reference]
   );
@@ -157,13 +148,9 @@ export async function sealItem(client, payload) {
   );
   await client.query(`UPDATE cases SET chain_head = $1 WHERE id = $2`, [ceHash, kase.id]);
 
-  // Open the custody chain with the collection itself.
-  //
-  // An evidence item whose handling record does not begin at collection has a
-  // gap at the only point that cannot be reconstructed later, and a report
-  // whose first line is "examined" invites the obvious question of what
-  // happened before that. Sealing and collecting are the same act, so the
-  // event is written here rather than left to the caller to remember.
+  // Sealing opens the chain with the collection itself. A handling record that
+  // does not begin at collection has a gap at the one point that cannot be
+  // reconstructed later.
   const collectedEvent = await appendEvent(client, {
     itemId: rows[0].id,
     actorRef: actorId,
@@ -181,11 +168,8 @@ export async function sealItem(client, payload) {
 }
 
 /**
- * Batch sync from a field device.
- *
- * The whole batch is one transaction. Either the device's queue lands
- * completely or not at all, so a dropped connection halfway through cannot
- * leave a half written chain that then fails verification for no good reason.
+ * Batch sync from a field device, as a single transaction. A dropped
+ * connection cannot leave a partially written chain.
  */
 export async function syncBatch({ deviceId, items = [], events = [] }) {
   return tx(async (client) => {
@@ -204,23 +188,19 @@ export async function syncBatch({ deviceId, items = [], events = [] }) {
           sealedAt: result.item.sealed_at,
         });
       } catch (err) {
-        if (err.code === "ROOT_MISMATCH") throw err; // poison the batch on purpose
+        if (err.code === "ROOT_MISMATCH") throw err; // fails the whole batch
         rejected.push({ reference: payload.reference, error: err.message });
       }
     }
 
-    // References sealed in THIS batch already carry a collected event,
-    // written by sealItem. The device queues one too, because offline it has
-    // no way to know the server will write it. Recording both would put the
-    // same act in the record twice, so the duplicate is dropped here and
-    // reported, rather than silently ignored.
+    // Items sealed in this batch already carry a collected event. The device
+    // queues one too, having no way offline to know the server will write it.
+    // The duplicate is reported rather than silently dropped.
     const sealedHere = new Set(sealed.map((s) => s.reference));
 
     for (const ev of events) {
-      // On the client, not the pool. A field device sends an item and the
-      // events for that item in one batch, so the item it refers to was
-      // created earlier in THIS transaction and is not yet visible to any
-      // other connection.
+      // On the transaction client: the item was created earlier in this
+      // transaction and is not visible to any other connection.
       const ref = ev.itemRef ?? ev.itemId ?? ev.itemReference;
 
       if (ev.action === "collected" && sealedHere.has(ref)) {
@@ -251,14 +231,11 @@ export async function syncBatch({ deviceId, items = [], events = [] }) {
 }
 
 /**
- * Record that the exhibit itself has reached the evidence store.
+ * Record that the exhibit has reached the evidence store.
  *
- * Sealing records the fingerprint; this records the file. They are separate
- * acts performed by different people at different times, which is how
- * physical evidence handling already works, and an item between the two is
- * neither intact nor missing. Depositing appends a custody event, so the
- * moment the exhibit arrived is part of the record rather than a silent
- * column update.
+ * Sealing records the fingerprint, this records the file. An item between the
+ * two is neither intact nor missing. Appends a custody event so the arrival is
+ * part of the record rather than a silent column update.
  */
 export async function depositItem(client, { itemRef, storagePath, actorRef, note }) {
   const { rows } = await client.query(

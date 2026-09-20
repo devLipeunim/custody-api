@@ -1,13 +1,10 @@
-// The one page report.
+// The one page evidence report.
 //
-// This is the deliverable the track is really about. The brief's final
-// audience is a magistrate or panel member who is not a technologist, so:
-// one page, Times New Roman, no jargon, no hash values on the front page.
-// Technical detail goes to Appendix A on page two, where it can be ignored.
+// Written for a reader who is not a technologist: one page, no jargon, no hash
+// values, with technical detail confined to Appendix A.
 //
-// Times-Roman, Times-Bold and Times-Italic are three of the fourteen PDF
-// base fonts. They need no font file and no embedding, which is exactly what
-// this report calls for. Do not load a font.
+// Times-Roman, Times-Bold and Times-Italic are PDF base fonts, so no font file
+// is loaded or embedded.
 
 import PDFDocument from "pdfkit";
 import { plainAction, formatPlain, formatDay, formatSize, formatNumber, offlineGapSentence } from "./plain.js";
@@ -89,9 +86,8 @@ export function buildReport({ item, events, verification, caseInfo }) {
     const r = verification.alteredByteRange;
     const single = verification.chunkCount === 1;
     if (single) {
-      // A small item is one chunk, and "part 1 of 1 differs" reads as
-      // nonsense to a reader who has not been told what a chunk is. For
-      // these, say plainly that the fingerprint differs.
+      // "Part 1 of 1 differs" is meaningless to a reader who has not been told
+      // what a chunk is.
       body(
         `That fingerprint was taken again on ${formatDay(verification.verifiedAt)} and it did not ` +
         `match. The item held in storage is not the item that was collected. Because the two ` +
@@ -121,10 +117,8 @@ export function buildReport({ item, events, verification, caseInfo }) {
 
   // --- Who has handled it? -----------------------------------------------
   heading("Who has handled it?");
-  // Two columns: the timestamp in a fixed left column and the description
-  // in its own block, so that a long entry wraps under the name rather than
-  // back to the page margin. A ragged left edge here reads as sloppiness on
-  // a document that is meant to be handed to a panel.
+  // Two columns, so a long entry wraps under the name rather than back to the
+  // page margin.
   const TIME_COL = 8;
   const TEXT_COL = 112;
   doc.font("Times-Roman").fontSize(11);

@@ -1,9 +1,8 @@
-// The dashboard, as a browser actually receives it.
+// The dashboard as a browser receives it.
 //
-// Route tests that only assert 200 miss the failures that matter here: a page
-// that renders but shows "undefined", a raw database enum reaching a panel
-// member, or a Verify button wired to an address the browser cannot reach.
-// This checks the served HTML and the client bundle.
+// Asserts against the served HTML and the client bundle, not merely status
+// codes: a page can render while showing "undefined", leaking a database enum,
+// or wiring its controls to an unreachable address.
 //
 // Usage: node test/web.test.mjs      (both the API and the dashboard running)
 
@@ -26,8 +25,8 @@ const page = async (path) => {
   const res = await fetch(`${WEB}${path}`, { cache: "no-store" });
   return { status: res.status, html: await res.text() };
 };
-// React writes <!-- --> between adjacent expressions. Those must be removed
-// outright, not turned into spaces, or "8 chunks" arrives here as "8 chunk s".
+// React writes <!-- --> between adjacent expressions; removed outright rather
+// than replaced with a space.
 const text = (html) => html.replace(/<script[\s\S]*?<\/script>/g, "")
   .replace(/<!--[\s\S]*?-->/g, "").replace(/<[^>]+>/g, " ")
   .replace(/&#x27;/g, "'").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/\s+/g, " ");
@@ -93,8 +92,8 @@ section("Case detail");
   for (const ref of ["EX-2026-0007", "EX-2026-0008", "EX-2026-0009", "EX-2026-0010"]) {
     check(t.includes(ref), `lists ${ref}`);
   }
-  // Straight after a reset nothing has been verified yet, and the dashboard
-  // says so rather than asserting an integrity it has not checked.
+  // Nothing is verified straight after a reset, and the page says so rather
+  // than asserting an integrity it has not checked.
   check(t.includes("Not yet verified"), "unverified items say so instead of claiming intact");
   check(t.includes("Check the case record"), "the case level chain check is offered");
   check(t.includes("Tunde Okonjo"), "the collecting officer is named");
@@ -158,8 +157,7 @@ section("A broken chain renders as broken, at the right link");
     `${(html.match(/class="broken/g) || []).length}`);
   check(/link broken here/.test(t), "the break carries a visible label");
 
-  // Badges on the list are "as at the last verification", so run one and
-  // confirm the result actually reaches the summary.
+  // List badges reflect the last verification, so run one first.
   await fetch(`${API}/api/items/EX-2026-0007/verify`);
   await fetch(`${API}/api/items/EX-2026-0010/verify`);
   const list = text((await page("/")).html);
@@ -183,21 +181,13 @@ section("A deleted item is caught on the case page");
 section("Failure modes are handled, not crashed through");
 {
   const missing = await page("/items/EX-DOES-NOT-EXIST");
-  // The status is 200 rather than 404, and that is a deliberate trade.
-  //
-  // The detail routes have a loading.js, which puts a Suspense boundary
-  // around them and lets Next stream the shell before the data arrives. That
-  // is what makes the skeletons possible. Once the shell has been flushed the
-  // status line has already gone out, so a notFound() raised afterwards can
-  // no longer change it. What the reader sees is correct either way; what a
-  // crawler sees is not. For a local dashboard, a skeleton on every page view
-  // is worth more than a status code nothing in this system reads.
-  //
-  // Remove app/**/loading.js and this becomes a 404 again.
+  // 200 rather than 404 by design: loading.js places a Suspense boundary
+  // around these routes, so the shell streams before the data arrives and the
+  // status line is already sent by the time notFound() runs. Removing
+  // app/**/loading.js restores the 404 and loses the skeletons.
   check(missing.status < 500, "an unknown item does not produce a server error", `${missing.status}`);
-  // The not-found body arrives as streamed React Flight data inside a script
-  // tag, so it is searched for in the raw response rather than the stripped
-  // text. A browser renders it; this extractor cannot.
+  // Streamed as React Flight data inside a script tag, so it is matched in
+  // the raw response rather than the stripped text.
   check(/No such record/.test(missing.html), "and says so in plain words");
   const missingCase = await page("/cases/NO-SUCH-CASE");
   check(missingCase.status < 500, "an unknown case does not either", `${missingCase.status}`);

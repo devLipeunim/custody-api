@@ -21,8 +21,7 @@ custody.post("/events", async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// Batch upload of a field device's queue. One transaction for the whole
-// batch, so a dropped connection cannot leave a half written chain.
+// Batch upload of a field device's queue, as a single transaction.
 custody.post("/sync", async (req, res, next) => {
   try {
     res.json(await syncBatch(req.body ?? {}));

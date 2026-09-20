@@ -1,8 +1,7 @@
 -- Custody: chain of custody for digital evidence.
--- ICSC 2026 Universities Hackathon, Track H.
 --
--- Loading this file DROPS and recreates everything. It is the reset path for
--- the demo, so it is deliberately destructive and deliberately idempotent.
+-- Loading this file drops and recreates every object. It is the reset path and
+-- is deliberately destructive and idempotent.
 
 DROP TRIGGER IF EXISTS no_update ON custody_events;
 DROP TABLE IF EXISTS verifications CASCADE;
@@ -46,10 +45,8 @@ CREATE TABLE items (
   collected_by       UUID NOT NULL REFERENCES actors(id),
   collection_lat     DOUBLE PRECISION,
   collection_lng     DOUBLE PRECISION,
-  -- Nullable on purpose. A field device seals an item at the scene and can
-  -- know nothing about the layout of the evidence store, so the fingerprint
-  -- is recorded before the exhibit is deposited. Null means "not yet in the
-  -- store", which is a different statement from "the file is gone".
+  -- Nullable: a field device records a fingerprint before the exhibit reaches
+  -- the store. NULL means not yet deposited, which is distinct from missing.
   storage_path       TEXT,
   deposited_at       TIMESTAMPTZ,
   chain_head         TEXT                   -- hash of latest custody event
@@ -71,10 +68,9 @@ CREATE TABLE custody_events (
   UNIQUE (item_id, seq)
 );
 
--- The case level chain. One event per item creation, so that deleting an
--- entire item still leaves a trace. item_reference is TEXT and NOT a foreign
--- key on purpose: when a row disappears from items, this record survives and
--- the gap becomes visible. A foreign key would cascade the evidence away.
+-- Case level chain: one event per item creation, so deleting an entire item
+-- still leaves a trace. item_reference is TEXT rather than a foreign key so
+-- the record survives the item's deletion and the gap becomes visible.
 CREATE TABLE case_events (
   id              UUID PRIMARY KEY,
   case_id         UUID NOT NULL REFERENCES cases(id),
@@ -104,9 +100,8 @@ CREATE INDEX idx_events_item_seq ON custody_events(item_id, seq);
 CREATE INDEX idx_case_events_case_seq ON case_events(case_id, seq);
 CREATE INDEX idx_verifications_item ON verifications(item_id, run_at DESC);
 
--- Append only, enforced by the database and not merely by application code.
--- A mistake is corrected by appending a correction event that references the
--- erroneous one, which is how physical evidence handling already works.
+-- Append only, enforced by the database rather than by application code.
+-- Corrections are appended as events referencing the erroneous one.
 CREATE OR REPLACE FUNCTION block_mutation() RETURNS trigger AS $$
 BEGIN
   RAISE EXCEPTION 'custody_events is append only';

@@ -7,7 +7,7 @@ import { verifyChain } from "../chain.js";
 
 export const items = Router();
 
-// Seal a new evidence item. Metadata only: the file itself never travels.
+// Seal a new evidence item. Metadata only; the file does not travel.
 items.post("/", async (req, res, next) => {
   try {
     const result = await tx((client) => sealItem(client, req.body ?? {}));
@@ -15,8 +15,7 @@ items.post("/", async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// Record that the exhibit has reached the evidence store. An item sealed in
-// the field carries a fingerprint but no file until this is called.
+// Record that the exhibit has reached the evidence store.
 items.post("/:id/deposit", async (req, res, next) => {
   try {
     const { storagePath, actorRef, note } = req.body ?? {};
@@ -32,8 +31,7 @@ items.get("/:id", async (req, res) => {
   const lastVerification = await one(
     `SELECT * FROM verifications WHERE item_id = $1 ORDER BY run_at DESC LIMIT 1`, [item.id]
   );
-  // The full chunk hash list is large for a big item and the client does not
-  // need it to draw the chunk map, only the count.
+  // The full chunk hash list is large and the client needs only the count.
   const { chunk_hashes, ...rest } = item;
   res.json({ ...rest, chunk_count: chunk_hashes.length, last_verification: lastVerification });
 });
@@ -67,8 +65,7 @@ items.get("/:id/verify", async (req, res) => {
   res.json(result);
 });
 
-// The chunk map: one entry per chunk, so the dashboard can render a row of
-// blocks, green for matching and red for altered.
+// One entry per chunk, for rendering the chunk map.
 items.get("/:id/chunks", async (req, res) => {
   const item = await loadItem(req.params.id);
   if (!item) return res.status(404).json({ error: "item not found" });

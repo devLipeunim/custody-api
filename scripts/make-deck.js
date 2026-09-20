@@ -1,15 +1,11 @@
-// Builds the twelve slide deck as a PDF.
+// Builds the presentation deck as a PDF.
 //
-// Specification, from the handoff: twelve slides, 16:9, Times New Roman
-// throughout, no em dashes or en dashes anywhere, dark text on a light
-// background, one idea per slide, minimal text, no bullet walls. The slides
-// support the speaker; they are not the submission.
-//
-// Generated with pdfkit rather than a browser based tool for the same reason
-// the report is: the presenting laptop should not need Chromium, and Times is
-// one of the fourteen PDF base fonts so nothing has to be embedded.
+// 16:9, Times throughout, dark text on light, one idea per slide. Generated
+// with pdfkit so the presenting machine needs no browser, and Times is a PDF
+// base font so nothing is embedded.
 //
 // Usage: node scripts/make-deck.js [outfile]
+//        DECK_ONLY=7 node scripts/make-deck.js out.pdf
 
 import PDFDocument from "pdfkit";
 import { createWriteStream } from "node:fs";
@@ -28,8 +24,8 @@ const PAPER = "#fbfbf8";
 const GREEN = "#1a7f37";
 const RED = "#b42318";
 
-// Every string that reaches the page passes through here, so the no dashes
-// rule is enforced by the build rather than by proofreading.
+// Every string on a slide passes through T(), so the no dashes rule is
+// enforced by the build rather than by proofreading.
 const BANNED = /[—–]/;
 const collected = [];
 const T = (s) => { collected.push(s); return s; };
@@ -41,9 +37,7 @@ const doc = new PDFDocument({ size: [W, H], margin: 0, info: {
 } });
 doc.pipe(createWriteStream(OUT));
 
-// Each slide is a function so that a single one can be emitted on its own
-// with DECK_ONLY=7, which is how the layout gets proof read without rendering
-// the whole deck every time.
+// Each slide is a function, so DECK_ONLY can emit one in isolation.
 const SLIDES = [];
 const ONLY = process.env.DECK_ONLY ? process.env.DECK_ONLY.split(",").map(Number) : null;
 
@@ -51,8 +45,8 @@ let slideNo = 0;
 let emitted = 0;
 function slide(kicker) {
   if (emitted > 0) doc.addPage({ size: [W, H], margin: 0 });
-  emitted += 1;   // slideNo is set by the emit loop, so the printed number is
-                  // the slide's real position even when rendering one alone
+  emitted += 1;   // slideNo comes from the emit loop, so the printed number is
+                  // correct even when a single slide is rendered
   doc.rect(0, 0, W, H).fill(PAPER);
   if (kicker) {
     doc.font("Times-Roman").fontSize(13).fillColor(MUTED)
@@ -230,9 +224,7 @@ SLIDES.push(() => {
     const altered = i === 5;
     doc.roundedRect(cx + i * (cw + 8), cy, cw, ch, 4)
        .fillAndStroke(altered ? RED : "#e8f5ec", altered ? RED : "#bfe3ca");
-    // Numbered from one, to match the words underneath. The code counts
-    // chunks from zero; a panel member counts parts from one, and the slide
-    // is for the panel member.
+    // Numbered from one, to match the caption. The code indexes from zero.
     doc.font("Times-Bold").fontSize(16).fillColor(altered ? "#fff" : GREEN)
        .text(String(i + 1), cx + i * (cw + 8), cy + 20, { width: cw, align: "center" });
   }

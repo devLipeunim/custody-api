@@ -124,8 +124,7 @@ fails, change the `local` line in `pg_hba.conf` from `peer` to `md5` and restart
 
 **WSL does not autostart PostgreSQL.** After every Windows reboot you need
 `sudo service postgresql start`. If the presenting machine runs WSL, put that at the top of the
-demo checklist. A refused connection ninety seconds before presenting is an avoidable way to
-lose the room.
+demo checklist.
 
 **localhost on a phone means the phone.** The field app must be given the laptop's LAN address.
 The server binds `0.0.0.0` so that this works.
@@ -271,10 +270,9 @@ Thirteen slides, 16:9, Times throughout, generated with pdfkit for the same reas
 is. The build fails if an em dash or en dash reaches any slide, because the specification
 forbids them and proofreading does not scale.
 
-Two slides carry bracketed placeholders and must be filled in before presenting: the result of
-the non technical user test, and a photograph of the printed report. **Do not invent the user
-test result.** It is worth more than anything we could make up, and it is the one slide almost
-no other team will have.
+Two slides carry bracketed placeholders and must be completed before presenting: the result of
+the non technical user test, and a photograph of the printed report. The user test result must
+be the real one.
 
 ---
 

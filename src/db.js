@@ -1,5 +1,5 @@
-// A single pg Pool, cached on globalThis so that `node --watch` reloading in
-// development does not open a new pool on every save.
+// A single pg Pool, cached on globalThis so `node --watch` does not open a
+// new pool on every reload.
 
 import "dotenv/config";
 import pg from "pg";
@@ -7,14 +7,12 @@ import pg from "pg";
 const connectionString =
   process.env.DATABASE_URL || "postgresql://custody:custody@localhost:5432/custody";
 
-// Timestamps: let pg hand us Date objects, and keep BIGINT as a JS number.
-// file_size_bytes will not exceed 2^53 for anything we can actually store.
+// BIGINT as a JS number: file_size_bytes will not approach 2^53.
 pg.types.setTypeParser(20, (v) => (v === null ? null : Number(v)));
 
-// A managed database (Render, for instance) terminates TLS and presents a
-// certificate this process has no root for, so verification is disabled for
-// remote hosts only. A local socket needs no TLS at all, and silently
-// enabling it there breaks the demo machine.
+// A managed database terminates TLS with a certificate this process has no
+// root for, so verification is disabled for remote hosts only. Local
+// connections need no TLS and enabling it there breaks them.
 const isLocal = /@(localhost|127\.0\.0\.1|\[::1\])[:/]/.test(connectionString);
 const ssl = isLocal ? false : { rejectUnauthorized: false };
 

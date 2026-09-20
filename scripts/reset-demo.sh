@@ -1,12 +1,9 @@
 #!/usr/bin/env bash
-# Restores the demo to a known clean state. Run between rehearsals.
+# Restores a known clean state.
 #
-# This is deliberately more careful than "reseed and tamper". tamper-file.js
-# flips a byte with XOR 0xff, which is its own inverse, so running it twice
-# silently restores the original. A reset built on "tamper again" therefore
-# drifts: after two resets the demo item is the wrong way round. Instead we
-# keep pristine copies of the evidence and restore from them, so the state
-# after every reset is identical to the state after the first one.
+# Restores evidence from pristine copies rather than re-applying the tamper.
+# tamper-file.js flips a byte with XOR 0xff and is its own inverse, so a reset
+# built on re-tampering alternates rather than converging.
 #
 # Usage: ./scripts/reset-demo.sh
 set -euo pipefail

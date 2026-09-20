@@ -6,10 +6,8 @@ import { verifyCase } from "../verify.js";
 export const cases = Router();
 
 cases.get("/", async (_req, res) => {
-  // The integrity summary on the case list comes from the most recent
-  // verification of each item, not from a fresh rehash. Rehashing every file
-  // to paint a list would make the page slow for no gain; the badge says
-  // "as last verified" and the item page is where you run a live check.
+  // Summarised from each item's most recent verification rather than a fresh
+  // rehash, which would make the list slow. Live checks run per item.
   res.json(await many(`
     SELECT c.*,
            COUNT(i.id)::int AS item_count,
@@ -69,7 +67,7 @@ cases.get("/:id", async (req, res) => {
   res.json({ ...kase, items });
 });
 
-// The case level chain. This is what catches an item being deleted outright.
+// Case level chain, which detects an item deleted outright.
 cases.get("/:id/verify", async (req, res) => {
   const result = await verifyCase(req.params.id);
   if (!result) return res.status(404).json({ error: "case not found" });

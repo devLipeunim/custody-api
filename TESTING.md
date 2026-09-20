@@ -1,6 +1,6 @@
 # How to test Custody
 
-Written for the team. Read this before the first rehearsal.
+Read this before the first rehearsal.
 
 The tests are arranged as a ladder of claims. Each rung proves one thing the pitch asserts,
 and each rung assumes the one below it holds. If you work up the ladder in order, by the time
@@ -226,7 +226,7 @@ status code nothing in this system reads. Delete `app/**/loading.js` to reverse 
 
 ## Level 3: things only a human can test
 
-Automated tests cannot do these, and two of them are worth marks.
+Automated tests cannot cover these.
 
 ### 3a. Seal an item with the network off
 
@@ -255,10 +255,9 @@ Ask afterwards:
 - Is the evidence changed or not? How do you know?
 - Is there anything here you could not follow?
 
-Write down what confused them and what you changed in response. That goes on slide 11 and into
-the submission. **Do not invent the result.** Almost no other team will have done this, and an
-honest "they did not understand the phrase X, so we changed it to Y" is worth more than any
-claim we could make up.
+Record what confused them and what changed in response. That goes on slide 11 and into the
+submission. **Do not invent the result.** An accurate "they did not understand the phrase X, so
+it became Y" is the only version of this worth reporting.
 
 ### 3c. Read the report yourself, out loud
 

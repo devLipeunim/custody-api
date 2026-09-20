@@ -1,9 +1,7 @@
-// Every endpoint, every consumer contract.
+// Every endpoint, and the response contracts its consumers depend on.
 //
-// The point of this suite is not only that each route answers. It is that it
-// answers with the exact field names the dashboard and the field app read.
-// A renamed field is invisible to a route test and fatal on stage, so each
-// contract block below lists the keys its consumer actually destructures.
+// Each contract assertion lists the keys the dashboard or the field app
+// actually reads, so a renamed field fails here rather than at runtime.
 //
 // Usage: node test/api.test.mjs      (the API must be running)
 
@@ -212,8 +210,7 @@ section("GET /api/items/:id/chunks  (chunk map)");
   has(r.body, ["itemReference", "chunkSizeBytes", "fileIntegrity", "chunks"], "contract: chunk map");
   check(r.body.chunks.length === 8, "8 chunks", `${r.body.chunks.length}`);
   has(r.body.chunks[0], ["index", "hash", "altered", "byteStart", "byteEnd"], "contract: chunk row");
-  // The final chunk is short unless the file divides exactly, so contiguity
-  // is checked link by link rather than by multiplying out the chunk size.
+  // The final chunk is short unless the file divides exactly.
   const item = (await get("/api/items/EX-2026-0041")).body;
   const contiguous = r.body.chunks.every((c, i) =>
     i === 0 ? c.byteStart === 0 : c.byteStart === r.body.chunks[i - 1].byteEnd + 1);
@@ -243,8 +240,7 @@ section("GET /api/items/:id/report");
   const missing = await fetch(`${API}/api/items/EX-NOPE/report`);
   check(missing.status === 404, "404 for an unknown item", `${missing.status}`);
 
-  // A report must never be generated for an item whose chain is unverified:
-  // the wording on the page is driven by the verification, so it must run.
+  // The wording on the page is driven by the verification result.
   const pdf = buf.toString("latin1");
   check(!pdf.includes("undefined") && !pdf.includes("[object Object]"),
     "no undefined or [object Object] leaked into the document");
@@ -276,8 +272,7 @@ section("POST /api/items  (seal directly, metadata only)");
   check(r.body.created === true, "created flag is true");
   check(r.body.item.root_hash === merkle, "server recomputed the same Merkle root");
 
-  // Sealing opens the custody chain. An item whose handling record does not
-  // begin at collection has a gap at the one point nobody can reconstruct.
+  // Sealing opens the custody chain at the collection itself.
   const sealedChain = (await get(`/api/items/EX-API-${stamp}/chain`)).body;
   check(sealedChain.events.length === 1, "sealing wrote exactly one event", `${sealedChain.events.length}`);
   check(sealedChain.events[0].action === "collected", "and that event is the collection",
@@ -326,9 +321,8 @@ section("POST /api/custody/events");
   has(r.body, ["id", "item_id", "seq", "action", "actor_id", "note", "device_time",
     "server_time", "file_hash", "prev_hash", "event_hash"], "contract: created event");
   check(r.body.seq === 1, "seq follows the collected event", `${r.body.seq}`);
-  // Not "the two strings differ": a device clock set to this instant would
-  // make that flaky. The point is that the server uses its OWN clock, so
-  // record an event dated last year and check the server did not adopt it.
+  // Comparing the two strings would be flaky when the clocks agree. Record a
+  // backdated event and confirm the server did not adopt the device's time.
   const backdated = await post("/api/custody/events", {
     itemRef: ref, actorRef: "NPF-19003", action: "accessed",
     deviceTime: "2025-01-01T00:00:00.000Z",

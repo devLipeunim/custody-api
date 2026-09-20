@@ -1,6 +1,5 @@
-// Simulates a field device that collected an item with no network and then
-// synced when the connection returned. Exercises POST /api/custody/sync the
-// way the Expo app does, including the deliberate rejection paths.
+// A device that collected with no network and synced once it returned.
+// Exercises POST /api/custody/sync including its rejection paths.
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -38,7 +37,7 @@ const post = async (path, body) => {
   return { status: res.status, body: await res.json() };
 };
 
-// --- the device fingerprints a file at the scene, offline ---
+// --- fingerprint taken on device, offline ---
 const FILE = path.join(TESTDATA, "evidence/case-c/field-collection-note.txt");
 const bytes = readFileSync(FILE);
 const chunkHashes = [shaBytes(bytes)];
@@ -69,9 +68,8 @@ const r1 = await post("/api/custody/sync", {
 });
 check(r1.status === 200, "sync accepted", `HTTP ${r1.status}`);
 check(r1.body.sealed?.length === 1, "item sealed on the server");
-// The device queues a collected event because, offline, it cannot know the
-// server will write one when the item is sealed. The server records the
-// collection once and reports the duplicate rather than dropping it silently.
+// The device queues a collected event, having no way offline to know the
+// server writes one on seal. The duplicate is reported, not silently dropped.
 check(r1.body.appended?.length === 1, "the sealed event was appended", `${r1.body.appended?.length} appended`);
 check(r1.body.deduped?.length === 1 && r1.body.deduped[0].action === "collected",
   "the device's duplicate collected event was recognised, not recorded twice",

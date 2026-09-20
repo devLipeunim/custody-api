@@ -1,14 +1,10 @@
 // Verification: recompute, compare, localise.
 //
-// Two independent questions are answered here and the report keeps them
-// separate, because they fail for different reasons and a panel needs to be
-// told which one went wrong:
+// Two independent questions, reported separately because they fail for
+// different reasons and carry different consequences:
 //
-//   fileIntegrity  - are the bytes on disk the bytes we fingerprinted?
-//   chainIntegrity - has the handling record itself been edited?
-//
-// A file can be intact while its custody trail has been tampered with, and
-// the reverse. Collapsing them into one green tick would hide that.
+//   fileIntegrity  are the bytes on disk the bytes that were fingerprinted?
+//   chainIntegrity has the handling record itself been edited?
 
 import path from "node:path";
 import { stat } from "node:fs/promises";
@@ -17,9 +13,8 @@ import { query, one, many } from "./db.js";
 import { fingerprintFile, compareChunks } from "./hash.js";
 import { verifyChain, verifyCaseChain } from "./chain.js";
 
-// Defaults to the pack vendored into this repository, so a deployed service
-// has the evidence it is asked to verify without depending on anything
-// outside its own checkout.
+// Defaults to the pack vendored in this repository, so a deployed service can
+// verify without depending on anything outside its own checkout.
 const EVIDENCE_ROOT =
   process.env.EVIDENCE_ROOT ||
   path.resolve(path.dirname(new URL(import.meta.url).pathname), "../testdata");
@@ -55,10 +50,7 @@ export async function loadChain(itemId) {
   );
 }
 
-/**
- * Verify one evidence item. Recomputes the file fingerprint from disk and
- * recomputes every link in the custody chain. Nothing stored is trusted.
- */
+/** Recomputes the file fingerprint from disk and every link in the chain. */
 export async function verifyItem(idOrReference, { runBy = null, record = true } = {}) {
   const item = await loadItem(idOrReference);
   if (!item) return null;
@@ -76,11 +68,8 @@ export async function verifyItem(idOrReference, { runBy = null, record = true } 
 
   try {
     if (!item.storage_path) {
-      // Sealed in the field, exhibit not yet deposited in the evidence store.
-      // The fingerprint stands and the custody chain is unaffected; there is
-      // simply nothing here yet to compare it against. Reporting this as
-      // "missing" would accuse somebody of losing evidence that never
-      // arrived.
+      // Sealed in the field, exhibit not yet deposited. Distinct from missing,
+      // which would assert that evidence had been lost.
       throw Object.assign(new Error("not deposited"), { code: "NOT_DEPOSITED" });
     }
     const filePath = resolveEvidencePath(item.storage_path);
@@ -93,15 +82,13 @@ export async function verifyItem(idOrReference, { runBy = null, record = true } 
       const cmp = compareChunks(expectedChunks, fp.chunkHashes, item.chunk_size_bytes);
       alteredChunks = cmp.altered;
       alteredByteRange = cmp.byteRange;
-      // The last chunk is short, so never report a range past the file end.
+      // The final chunk is short, so the range never runs past the file end.
       if (alteredByteRange) {
         alteredByteRange.end = Math.min(alteredByteRange.end, Math.max(info.size, item.file_size_bytes) - 1);
       }
     }
   } catch (err) {
     if (err.code === "NOT_DEPOSITED") fileIntegrity = "awaiting_file";
-    // The file was in the store and is no longer. We prove change; we do not
-    // prevent deletion of the underlying file. This is stated in the limits.
     else if (err.code === "ENOENT") fileIntegrity = "missing";
     else throw err;
   }
@@ -142,9 +129,8 @@ export async function verifyItem(idOrReference, { runBy = null, record = true } 
 }
 
 /**
- * Verify a case level chain. This is what catches an item being deleted
- * outright: the item_added event survives in case_events, but the item it
- * names is no longer in the items table.
+ * Verify a case level chain. Catches outright deletion: the item_added event
+ * survives in case_events while the item it names no longer exists.
  */
 export async function verifyCase(idOrReference) {
   const kase = await one(

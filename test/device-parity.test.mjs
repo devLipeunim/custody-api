@@ -1,8 +1,7 @@
-// Transliterates the DEVICE algorithm (src/hash.js, src/chain.js in the
-// Expo app) into Node, using Node's crypto in place of expo-crypto, and
-// compares its output against the SERVER implementation on real files.
-// If these ever diverge, every fingerprint taken in the field becomes
-// unverifiable, so this is the test that must not be allowed to rot.
+// Transliterates the device algorithm (the Expo app's src/hash.js and
+// src/chain.js) into Node and compares it against the server implementation
+// over real files. Divergence would make every field fingerprint
+// unverifiable.
 import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -18,7 +17,6 @@ const devSha256Bytes  = (b) => createHash("sha256").update(b).digest("hex");    
 const devSha256String = (s) => createHash("sha256").update(s, "utf8").digest("hex"); // digestStringAsync(SHA256, s, HEX)
 
 function devHashChunks(path, chunkSize = 4 * 1024 * 1024) {
-  // The device seeks with handle.offset and calls readBytes(take).
   const total = statSync(path).size;
   const buf = readFileSync(path);
   const hashes = [];
@@ -71,7 +69,7 @@ for (const f of files) {
   console.log(`${ok ? "PASS" : "FAIL"}  ${String(dev.chunkHashes.length).padStart(2)} chunk(s)  ${devRoot.slice(0,16)}…  ${f.split("/").pop()}`);
 }
 
-// odd-node promotion, the easiest thing to get wrong on one side only
+// odd node promotion
 for (const n of [1,2,3,5,7,8,9]) {
   const fake = Array.from({length:n},(_,i)=>devSha256String(`chunk${i}`));
   const { merkleRoot } = await import("../src/hash.js");

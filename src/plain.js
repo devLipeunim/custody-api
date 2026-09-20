@@ -1,8 +1,7 @@
 // Plain language helpers.
 //
-// The report is judged on whether a panel member can read it. Raw enum
-// values and ISO timestamps are the two things that give a document away as
-// machine output, so neither is ever allowed to reach the page.
+// Raw enum values and ISO timestamps never reach the page: both identify a
+// document as machine output to a lay reader.
 
 const ACTIONS = {
   collected: "collected from the source device",
@@ -26,8 +25,7 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
 export function formatPlain(value) {
   const d = value instanceof Date ? value : new Date(value);
   const pad = (n) => String(n).padStart(2, "0");
-  // The day is padded so the custody list lines up as a column. An unpadded
-  // single digit day shifts the whole row and looks like a typing error.
+  // Padded so the custody list aligns as a column.
   return `${pad(d.getDate())} ${MONTHS[d.getMonth()]} ${d.getFullYear()}, ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
@@ -56,10 +54,8 @@ export function formatNumber(n) {
 }
 
 /**
- * The offline gap sentence, stated openly rather than hidden.
- *
- * A defence can challenge a device clock, so we never present one as though
- * it were authoritative. We show both times and name the gap.
+ * States the gap between device and server clocks explicitly. A device clock
+ * is not independently verifiable and is never presented as authoritative.
  */
 export function offlineGapSentence(deviceTime, serverTime) {
   const gapMs = new Date(serverTime) - new Date(deviceTime);

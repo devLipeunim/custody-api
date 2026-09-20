@@ -47,7 +47,8 @@ file. The progress bar shows chunk 1 of 8, 2 of 8, and so on. The item appears a
 **Sealed, not synced** with the short fingerprint. The header shows **1 pending**.
 
 > Say: the fingerprint was taken here, on this device, at the scene, before the file went
-> anywhere. This is rule 06 answered by architecture.
+> anywhere. The requirement to work through power and network cuts is answered by the
+> architecture rather than by a policy.
 
 **2. Turn the network on.** Within a couple of seconds the dot goes green and it syncs by
 itself. The badge becomes **Synced** and the server's own timestamp appears beneath the

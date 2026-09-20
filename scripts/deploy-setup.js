@@ -1,13 +1,9 @@
 // One time setup for a hosted deployment.
 //
-// Render and similar platforms give a fresh, empty filesystem and an empty
-// database. This generates the large file stand-in, loads the schema and
-// seeds the synthetic data, in that order, because the seeder fingerprints
-// each evidence file as it finds it and the 30MB file must therefore exist
-// before seeding rather than after.
+// Generates the large file stand-in, loads the schema and seeds, in that
+// order: the seeder fingerprints each evidence file as it finds it.
 //
-// Safe to run more than once: the schema drops and recreates, and the seeder
-// clears before inserting.
+// Idempotent. The schema drops and recreates, and the seeder clears first.
 //
 // Usage: node scripts/deploy-setup.js
 
@@ -25,8 +21,7 @@ const evidenceRoot = process.env.EVIDENCE_ROOT || path.join(root, "testdata");
 
 const big = path.join(evidenceRoot, "evidence/case-c/handset-extraction.bin");
 if (!existsSync(big)) {
-  // 30MB of random bytes, written in 4MB pieces so this process never holds
-  // more than one piece, exactly as the hasher does not.
+  // Written in 4MB pieces, so this process never holds more than one.
   console.log("Generating the 30MB stand-in extraction...");
   const fd = await import("node:fs").then((m) => m.openSync(big, "w"));
   const fs = await import("node:fs");
@@ -54,9 +49,8 @@ const seed = spawnSync(process.execPath,
   { stdio: "inherit" });
 if (seed.status) process.exit(seed.status);
 
-// Put EX-2026-0010 into its altered state, so a hosted instance shows the
-// same thing the demo does. The seeder fingerprints the file as it finds it,
-// so this must happen after seeding and never before.
+// Applies the deliberate alteration to EX-2026-0010. Must run after seeding,
+// since the seeder fingerprints each file as it finds it.
 console.log("\nSetting the altered demo item...");
 const tamper = spawnSync(process.execPath,
   [path.join(evidenceRoot, "scripts/tamper-file.js"),

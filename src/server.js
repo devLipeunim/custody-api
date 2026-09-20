@@ -1,8 +1,7 @@
 // Custody API.
 //
-// Binds 0.0.0.0 on purpose. The field app is a phone on the same wifi and it
-// reaches this process by the laptop's LAN address, not by localhost. A
-// server bound to loopback is the single most common way this demo dies.
+// Binds 0.0.0.0: the field app reaches this process by LAN address, not by
+// localhost.
 
 import "dotenv/config";
 import express from "express";
@@ -17,7 +16,7 @@ import { actors } from "./routes/actors.js";
 const app = express();
 const PORT = Number(process.env.PORT || 4000);
 
-app.use(cors());                       // local throwaway, synthetic data only
+app.use(cors());
 app.use(express.json({ limit: "8mb" })); // chunk hash arrays, never files
 
 app.get("/api/health", async (_req, res) => {
@@ -54,5 +53,5 @@ function lanAddress() {
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Custody API listening on port ${PORT}`);
   console.log(`  dashboard : http://localhost:${PORT}/api/health`);
-  console.log(`  field app : http://${lanAddress()}:${PORT}   <- put this in the phone`);
+  console.log(`  field app : http://${lanAddress()}:${PORT}`);
 });
