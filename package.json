@@ -18,7 +18,8 @@
     "test:web": "node test/web.test.mjs",
     "test:mobile": "node test/mobile.test.mjs",
     "deck": "node scripts/make-deck.js",
-    "deck:pptx": "node scripts/make-deck-pptx.js"
+    "deck:pptx": "node scripts/make-deck-pptx.js",
+    "writeup": "node scripts/make-writeup.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
