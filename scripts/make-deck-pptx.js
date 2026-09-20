@@ -1,399 +1,309 @@
 // Builds the presentation deck as an editable PowerPoint file.
 //
-// Same content and specification as make-deck.js, which produces the PDF:
-// 16:9, Times New Roman throughout, dark text on light, one idea per slide.
-// Diagrams are real shapes rather than images, so they can be edited in
-// PowerPoint like anything else on the slide.
+// Content comes from deck-content.js, the same module the PDF build uses, and
+// the layout arithmetic mirrors make-deck.js: positions are computed in the
+// same 960 by 540 point space and converted to inches, so the two builds put
+// everything in the same place.
+//
+// Diagrams are real shapes rather than images, so they remain editable.
 //
 // Usage: node scripts/make-deck-pptx.js [outfile]
 
 import PptxGenJS from "pptxgenjs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { DECK, allText } from "./deck-content.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const OUT = process.argv[2] ?? path.join(here, "../deck/custody-deck.pptx");
 
-// LAYOUT_16x9 is 10in x 5.625in. Coordinates beyond that are written rather
-// than clamped, so the shape silently lands off the slide.
-const W = 10;
-const H = 5.625;
-const M = 0.7;
-const COL = W - M * 2;
+const W = 960, H = 540;          // the shared point space
+const IN = (pt) => pt / 96;      // 960pt across a 10in slide
+
+const ML = 84;
+const COL = W - ML * 2;
+const BAND_TOP = 128, BAND_BOTTOM = 470;
 
 const FONT = "Times New Roman";
-const INK = "16160F";
-const MUTED = "6B6B60";
-const RULE = "C9C9BF";
-const PAPER = "FBFBF8";
-const GREEN = "1A7F37";
-const GREEN_BG = "E8F5EC";
-const GREEN_LINE = "BFE3CA";
-const RED = "B42318";
-const AMBER_BG = "F2E3B8";
-const AMBER_INK = "7A5C00";
+const INK = "14140E";
+const MUTED = "6E6E63";
+const FAINT = "9A9A90";
+const RULE = "D2D2C8";
+const PAPER = "FCFCF9";
+const GREEN = "1A7F37", GREEN_BG = "E9F5EC", GREEN_LINE = "C2E3CB";
+const RED = "B42318", RED_BG = "FDECEB", RED_LINE = "F0C8C4";
+const AMBER_BG = "F3E5BD", AMBER_INK = "7A5C00";
+const WHITE = "FFFFFF";
 
-// Every string on a slide passes through T(), so the no dashes rule is
-// enforced by the build rather than by proofreading.
-const seen = [];
-const T = (s) => { seen.push(s); return s; };
+const T = {
+  kicker:    { size: 11.5, lead: 16, color: MUTED, bold: false, track: 1.1 },
+  statement: { size: 44,   lead: 54, color: INK,   bold: true },
+  title:     { size: 36,   lead: 45, color: INK,   bold: true },
+  lead:      { size: 20,   lead: 29, color: INK,   bold: false },
+  rowLabel:  { size: 20,   lead: 29, color: INK,   bold: true },
+  rowValue:  { size: 17,   lead: 29, color: MUTED, bold: false },
+  quote:     { size: 18,   lead: 26, color: INK,   bold: false, italic: true },
+  attrib:    { size: 12,   lead: 18, color: FAINT, bold: false },
+};
+const GAP = { afterTitle: 30, afterStatement: 26, afterLead: 20, afterRows: 28, afterDiagram: 30 };
 
 const pres = new PptxGenJS();
 pres.layout = "LAYOUT_16x9";
-pres.author = "Custody";
+pres.author = "Team Captain";
 pres.title = "Custody: proving digital evidence has not been changed";
 
-let n = 0;
-function slide(kicker, notes) {
-  n += 1;
-  const s = pres.addSlide();
-  s.background = { color: PAPER };
-  if (kicker) {
-    s.addText(T(kicker), {
-      x: M, y: 0.34, w: COL, h: 0.3, isTextBox: true, margin: 0,
-      fontFace: FONT, fontSize: 12, color: MUTED, charSpacing: 1,
-    });
+let slide;
+/** One line of text placed at an exact point position. */
+const line = (s, style, x, y, opts = {}) =>
+  slide.addText(s, {
+    x: IN(x), y: IN(y), w: IN(opts.w ?? COL), h: IN(style.lead * 1.35),
+    isTextBox: true, margin: 0, valign: "top",
+    fontFace: FONT, fontSize: style.size, bold: style.bold, italic: style.italic ?? false,
+    color: opts.color ?? style.color, charSpacing: style.track ?? 0,
+    align: opts.align ?? "left",
+  });
+
+function blockHeight(b) {
+  switch (b.type) {
+    case "statement": return b.lines.length * T.statement.lead;
+    case "title":     return b.lines.length * T.title.lead;
+    case "lead":      return b.lines.length * T.lead.lead;
+    case "quote":     return b.lines.length * T.quote.lead + (b.attribution ? T.attrib.lead : 0);
+    case "rows":      return b.rows.length * (b.compact ? 34 : 42);
+    case "qa":        return b.rows.length * 32;
+    case "diagram":   return b.height;
+    default:          return 0;
   }
-  s.addText(String(n), {
-    x: W - M - 0.4, y: H - 0.62, w: 0.4, h: 0.28, isTextBox: true, margin: 0,
-    fontFace: FONT, fontSize: 10, color: RULE, align: "right",
-  });
-  if (notes) s.addNotes(notes);
-  return s;
 }
-
-const title = (s, text, opts = {}) =>
-  s.addText(T(text), {
-    x: M, y: opts.y ?? 1.05, w: opts.w ?? COL, h: opts.h ?? 1.15, isTextBox: true, margin: 0,
-    fontFace: FONT, fontSize: opts.size ?? 30, bold: true, color: INK,
-    lineSpacingMultiple: 1.12, valign: "top",
-  });
-
-const lead = (s, text, opts = {}) =>
-  s.addText(T(text), {
-    x: M, y: opts.y, w: opts.w ?? COL, h: opts.h ?? 0.9, isTextBox: true, margin: 0,
-    fontFace: FONT, fontSize: opts.size ?? 17, color: opts.color ?? INK,
-    lineSpacingMultiple: 1.25, valign: "top",
-  });
-
-const note = (s, text, opts = {}) =>
-  s.addText(T(text), {
-    x: M, y: opts.y, w: opts.w ?? COL, h: opts.h ?? 0.8, isTextBox: true, margin: 0,
-    fontFace: FONT, fontSize: opts.size ?? 12, italic: true, color: MUTED,
-    lineSpacingMultiple: 1.25, valign: "top",
-  });
-
-// --- 1. Title --------------------------------------------------------------
-{
-  const s = slide(null, "Ten seconds. Do not read the slide.");
-  s.addText(T("Custody"), {
-    x: M, y: 1.55, w: COL, h: 1.0, isTextBox: true, margin: 0,
-    fontFace: FONT, fontSize: 54, bold: true, color: INK,
-  });
-  s.addText(T("Proving digital evidence has not been changed"), {
-    x: M, y: 2.6, w: COL, h: 0.5, isTextBox: true, margin: 0,
-    fontFace: FONT, fontSize: 20, color: INK,
-  });
-  s.addText(T("ICSC 2026 Universities Hackathon, Track H"), {
-    x: M, y: 4.16, w: COL, h: 0.3, isTextBox: true, margin: 0,
-    fontFace: FONT, fontSize: 12, color: MUTED,
-  });
-  s.addText(T("[Team name], five members, University of Ibadan"), {
-    x: M, y: 4.45, w: COL, h: 0.3, isTextBox: true, margin: 0,
-    fontFace: FONT, fontSize: 12, color: MUTED,
-  });
+function gapAfter(b) {
+  switch (b.type) {
+    case "statement": return GAP.afterStatement;
+    case "title":     return GAP.afterTitle;
+    case "lead":      return GAP.afterLead;
+    case "rows":
+    case "qa":        return GAP.afterRows;
+    case "diagram":   return GAP.afterDiagram;
+    default:          return 18;
+  }
 }
+const stackHeight = (blocks) =>
+  blocks.reduce((h, b, i) => h + blockHeight(b) + (i < blocks.length - 1 ? gapAfter(b) : 0), 0);
 
-// --- 2. The problem --------------------------------------------------------
-{
-  const s = slide("The problem",
-    "Tell it as a story. Evidence goes onto a flash drive, gets emailed, sits on a shared machine, and arrives at a hearing a year later.");
-  title(s, "Cases collapse because nobody can prove\nthe evidence was not changed.", { y: 1.15, size: 28, h: 1.4 });
-  lead(s, "Not because anyone changed it.", { y: 2.62, size: 19 });
-  note(s, "Evidence goes onto a flash drive, gets emailed between officers, sits on a shared machine, and arrives at a hearing a year later. Maybe nobody touched it. Nobody can prove that either.",
-    { y: 3.45, h: 1.1 });
-}
-
-// --- 3. Three settings -----------------------------------------------------
-{
-  const s = slide("Where this happens",
-    "Name the university panel explicitly. The room has sat on one.");
-  title(s, "Three settings", { y: 0.95, size: 28, h: 0.6 });
-  const rows = [
-    ["Cybercrime cases", "phone extractions, server logs"],
-    ["Fraud investigations", "transaction records, audit logs"],
-    ["Disciplinary panels", "message exports, access logs"],
-  ];
-  rows.forEach(([head, sub], i) => {
-    const y = 1.85 + i * 0.62;
-    s.addText(T(head), {
-      x: M, y, w: 3.4, h: 0.4, isTextBox: true, margin: 0,
-      fontFace: FONT, fontSize: 19, bold: true, color: INK,
-    });
-    s.addText(T(sub), {
-      x: M + 3.5, y: y + 0.06, w: COL - 3.5, h: 0.4, isTextBox: true, margin: 0,
-      fontFace: FONT, fontSize: 13, color: MUTED,
-    });
+const rect = (x, y, w, h, r, fill, stroke, strokeW = 1) =>
+  slide.addShape(r ? pres.ShapeType.roundRect : pres.ShapeType.rect, {
+    x: IN(x), y: IN(y), w: IN(w), h: IN(h), ...(r ? { rectRadius: IN(r) } : {}),
+    fill: { color: fill }, line: { color: stroke, width: strokeW },
   });
-  lead(s, "In each one, the handling record is on paper, if it exists at all.", { y: 4.1, size: 15 });
-}
 
-// --- 4. The fingerprint ----------------------------------------------------
-{
-  const s = slide("The idea", "No hashes on this slide. Words only.");
-  title(s, "A computer can read a file and produce\na short code from its contents.", { y: 1.05, size: 27, h: 1.35 });
-  lead(s, "Same file, same code, every time.", { y: 2.5, size: 19 });
-  lead(s, "Change one letter anywhere inside, and the code comes out\ncompletely different.", { y: 3.0, size: 19, h: 0.8 });
-  note(s, "The code is taken at the scene, on the collecting officer's own phone, before the file goes anywhere else. It is taken again months later and compared. Match means untouched.",
-    { y: 4.18, h: 0.9 });
-}
-
-// --- 5. The chain ----------------------------------------------------------
-{
-  const s = slide("The idea, part two",
-    "This metaphor is the one they will remember. Use it twice in the talk.");
-  title(s, "Every entry is knotted to the one before it,\nlike beads on a string.", { y: 1.0, size: 27, h: 1.3 });
-
-  const bx = M + 0.3, by = 3.05, gap = 1.28, r = 0.19;
-  for (let i = 0; i < 5; i += 1) {
-    const x = bx + i * gap;
-    if (i < 4) {
-      const broken = i === 2;
-      s.addShape(pres.ShapeType.line, {
-        x: x + r, y: by + r, w: gap - r * 2, h: 0,
-        line: {
-          color: broken ? RED : INK,
-          width: broken ? 2 : 2.25,
-          dashType: broken ? "dash" : "solid",
-        },
+const DIAGRAMS = {
+  beads(x, y, width) {
+    const n = 5, r = 17, span = Math.min(width, 620);
+    const gap = (span - r * 2) / (n - 1);
+    const cy = y + 40;
+    for (let i = 0; i < n; i += 1) {
+      const cx = x + r + i * gap;
+      if (i < n - 1) {
+        const broken = i === 2;
+        slide.addShape(pres.ShapeType.line, {
+          x: IN(cx + r), y: IN(cy), w: IN(gap - r * 2), h: 0,
+          line: { color: broken ? RED : INK, width: broken ? 2 : 2.4,
+                  dashType: broken ? "dash" : "solid" },
+        });
+      }
+      const bad = i === 3;
+      slide.addShape(pres.ShapeType.ellipse, {
+        x: IN(cx - r), y: IN(cy - r), w: IN(r * 2), h: IN(r * 2),
+        fill: { color: PAPER }, line: { color: bad ? RED : INK, width: 2.4 },
       });
     }
-    s.addShape(pres.ShapeType.ellipse, {
-      x, y: by, w: r * 2, h: r * 2,
-      fill: { color: PAPER },
-      line: { color: i === 3 ? RED : INK, width: 2.25 },
+    line("the string breaks here", T.attrib, x + r + 2 * gap - 24, cy + 30, { color: RED, w: 260 });
+  },
+
+  fingerprints(x, y, width) {
+    const rows = [
+      ["statement.pdf", "A3F1 9C22 7E04 6B8D 1C55 E210 44AF 9D31", false],
+      ["statement.pdf  (one character changed)",
+       "8B02 41DE C5A7 F014 92E6 3B7C D885 07A2", true],
+    ];
+    const boxW = Math.min(width, 700), boxH = 54, gap = 14;
+    rows.forEach(([label, code, bad], i) => {
+      const by = y + i * (boxH + gap);
+      rect(x, by, boxW, boxH, 5, bad ? RED_BG : GREEN_BG, bad ? RED_LINE : GREEN_LINE);
+      line(label, { ...T.attrib, size: 12.5 }, x + 18, by + 8, { color: MUTED, w: boxW - 36 });
+      slide.addText(code, {
+        x: IN(x + 18), y: IN(by + 26), w: IN(boxW - 36), h: IN(22),
+        isTextBox: true, margin: 0, valign: "top",
+        fontFace: "Courier New", fontSize: 15, bold: true,
+        color: bad ? RED : GREEN, charSpacing: 0.4,
+      });
     });
+  },
+
+  architecture(x, y, width) {
+    const bw = 244, bh = 108, bottomW = 300, bottomH = 92;
+    const box = (bx, by, w, h, head, lines) => {
+      rect(bx, by, w, h, 5, PAPER, RULE);
+      line(head, { ...T.lead, size: 16, bold: true }, bx + 16, by + 12, { w: w - 32 });
+      slide.addText(lines.join("\n"), {
+        x: IN(bx + 16), y: IN(by + 36), w: IN(w - 32), h: IN(h - 46),
+        isTextBox: true, margin: 0, valign: "top",
+        fontFace: FONT, fontSize: 12.5, color: MUTED, lineSpacingMultiple: 1.22,
+      });
+    };
+    const arrow = (x1, y1, x2, y2) =>
+      slide.addShape(pres.ShapeType.line, {
+        x: IN(Math.min(x1, x2)), y: IN(Math.min(y1, y2)),
+        w: IN(Math.abs(x2 - x1)), h: IN(Math.abs(y2 - y1)),
+        line: { color: FAINT, width: 1.1, endArrowType: "triangle",
+                beginArrowType: "none" },
+        flipH: x2 < x1, flipV: y2 < y1,
+      });
+    const leftX = x, rightX = x + width - bw, midX = x + (width - bottomW) / 2;
+    box(leftX, y, bw, bh, "Field app",
+      ["offline capture", "hashing on the device", "queue and deferred sync"]);
+    box(rightX, y, bw, bh, "Dashboard",
+      ["case and item views", "custody timeline", "chunk map and verify"]);
+    box(midX, y + 132, bottomW, bottomH, "API and database",
+      ["append only custody events", "verification, one page report"]);
+    arrow(leftX + bw / 2, y + bh + 4, midX + bottomW / 2 - 56, y + 128);
+    arrow(rightX + bw / 2, y + bh + 4, midX + bottomW / 2 + 56, y + 128);
+  },
+
+  chunks(x, y, width) {
+    const n = 8, gap = 9;
+    const cw = Math.min(88, (width - gap * (n - 1)) / n), ch = 60;
+    for (let i = 0; i < n; i += 1) {
+      const bad = i === 5;
+      const bx = x + i * (cw + gap);
+      rect(bx, y, cw, ch, 4, bad ? RED : GREEN_BG, bad ? RED : GREEN_LINE);
+      slide.addText(String(i + 1), {
+        x: IN(bx), y: IN(y + 17), w: IN(cw), h: IN(26),
+        isTextBox: true, margin: 0, align: "center", valign: "top",
+        fontFace: FONT, fontSize: 17, bold: true, color: bad ? WHITE : GREEN,
+      });
+    }
+  },
+
+  phone(x, y, w, h) {
+    rect(x, y, w, h, 22, PAPER, RULE, 1.4);
+    line("Custody", { ...T.lead, size: 13, bold: true }, x + 20, y + 22, { w: 100 });
+    rect(x + w - 92, y + 20, 72, 20, 10, AMBER_BG, AMBER_BG, 0.5);
+    slide.addText("1 pending", {
+      x: IN(x + w - 92), y: IN(y + 24), w: IN(72), h: IN(16),
+      isTextBox: true, margin: 0, align: "center", valign: "top",
+      fontFace: FONT, fontSize: 10, bold: true, color: AMBER_INK,
+    });
+    rect(x + 18, y + 60, w - 36, 108, 6, PAPER, RULE);
+    line("EX-FIELD-004821", { ...T.lead, size: 12, bold: true }, x + 32, y + 72, { w: w - 64 });
+    line("handset extraction", { ...T.attrib, size: 10.5 }, x + 32, y + 90, { color: MUTED, w: w - 64 });
+    line("A3F1 9C22 7E04", { ...T.lead, size: 12, bold: true }, x + 32, y + 110,
+      { color: GREEN, w: w - 64 });
+    rect(x + 32, y + 134, 122, 20, 10, AMBER_BG, AMBER_BG, 0.5);
+    slide.addText("Sealed, not synced", {
+      x: IN(x + 32), y: IN(y + 138), w: IN(122), h: IN(16),
+      isTextBox: true, margin: 0, align: "center", valign: "top",
+      fontFace: FONT, fontSize: 9.5, bold: true, color: AMBER_INK,
+    });
+    slide.addText("Airplane mode.\nNo network at the scene.", {
+      x: IN(x + 18), y: IN(y + 190), w: IN(w - 36), h: IN(48),
+      isTextBox: true, margin: 0, align: "center", valign: "top",
+      fontFace: FONT, fontSize: 11, color: MUTED, lineSpacingMultiple: 1.25,
+    });
+  },
+};
+
+function drawBlock(b, x, y, width) {
+  switch (b.type) {
+    case "statement":
+      b.lines.forEach((l, i) => line(l, T.statement, x, y + i * T.statement.lead, { w: width }));
+      break;
+    case "title":
+      b.lines.forEach((l, i) => line(l, T.title, x, y + i * T.title.lead, { w: width }));
+      break;
+    case "lead":
+      b.lines.forEach((l, i) => line(l, T.lead, x, y + i * T.lead.lead, { w: width }));
+      break;
+    case "quote":
+      b.lines.forEach((l, i) => line(l, T.quote, x, y + i * T.quote.lead, { w: width }));
+      if (b.attribution)
+        line(b.attribution, T.attrib, x, y + b.lines.length * T.quote.lead + 4, { w: width });
+      break;
+    case "rows": {
+      const step = b.compact ? 34 : 42;
+      const gutter = b.compact ? 300 : 340;
+      b.rows.forEach(([label, value], i) => {
+        line(label, b.compact ? { ...T.rowLabel, size: 17 } : T.rowLabel, x, y + i * step,
+          { w: gutter - 16 });
+        line(value, T.rowValue, x + gutter, y + i * step + 2, { w: width - gutter });
+      });
+      break;
+    }
+    case "qa":
+      b.rows.forEach(([q, a], i) => {
+        line(q, { ...T.rowLabel, size: 17 }, x, y + i * 32, { w: 240 });
+        line(a, { ...T.rowValue, size: 16, color: INK }, x + 250, y + i * 32, { w: width - 250 });
+      });
+      break;
+    case "diagram":
+      DIAGRAMS[b.name](x, y, width);
+      break;
   }
-  s.addText(T("pull one out, and the string breaks here"), {
-    x: bx + gap * 1.55, y: by + 0.52, w: 3.6, h: 0.35, isTextBox: true, margin: 0,
-    fontFace: FONT, fontSize: 13, italic: true, color: RED,
-  });
-  lead(s, "You cannot quietly remove a bead from the middle.", { y: 4.42, size: 17 });
 }
 
-// --- 6. Architecture -------------------------------------------------------
-{
-  const s = slide("How it fits together", "Twenty seconds. Do not walk through every box.");
-  title(s, "Architecture", { y: 0.85, size: 28, h: 0.6 });
+DECK.forEach((s, i) => {
+  slide = pres.addSlide();
+  slide.background = { color: PAPER };
+  if (s.notes) slide.addNotes(s.notes);
 
-  const box = (x, y, w, h, head, lines) => {
-    s.addShape(pres.ShapeType.roundRect, {
-      x, y, w, h, rectRadius: 0.05,
-      fill: { color: PAPER }, line: { color: RULE, width: 1 },
+  if (s.kicker) line(s.kicker, T.kicker, ML, 60);
+  slide.addText(String(i + 1), {
+    x: IN(W - ML - 40), y: IN(H - 52), w: IN(40), h: IN(18),
+    isTextBox: true, margin: 0, align: "right", valign: "top",
+    fontFace: FONT, fontSize: 10.5, color: FAINT,
+  });
+
+  if (s.layout === "title") {
+    line(s.title, { ...T.statement, size: 62 }, ML, 168, { w: COL });
+    line(s.subtitle, { ...T.lead, size: 23 }, ML, 256, { w: COL });
+    slide.addShape(pres.ShapeType.line, {
+      x: IN(ML), y: IN(352), w: IN(340), h: 0, line: { color: RULE, width: 1 },
     });
-    s.addText(T(head), {
-      x: x + 0.16, y: y + 0.12, w: w - 0.32, h: 0.3, isTextBox: true, margin: 0,
-      fontFace: FONT, fontSize: 14, bold: true, color: INK,
-    });
-    s.addText(T(lines.join("\n")), {
-      x: x + 0.16, y: y + 0.45, w: w - 0.32, h: h - 0.55, isTextBox: true, margin: 0,
-      fontFace: FONT, fontSize: 10.5, color: MUTED, lineSpacingMultiple: 1.2,
-    });
-  };
-
-  box(M, 1.6, 2.5, 1.25, "Field app",
-    ["offline capture", "hashing on the device", "local queue", "deferred sync"]);
-  box(W - M - 2.5, 1.6, 2.5, 1.25, "Dashboard",
-    ["case and item views", "custody timeline", "chunk map", "verify"]);
-  box(W / 2 - 1.6, 3.42, 3.2, 1.05, "API and database",
-    ["append only custody events", "verification", "one page report"]);
-
-  s.addShape(pres.ShapeType.line, {
-    x: M + 1.25, y: 2.87, w: W / 2 - 1.75 - M - 1.25 + 1.0, h: 0.52,
-    line: { color: MUTED, width: 1.1, endArrowType: "triangle" },
-  });
-  s.addShape(pres.ShapeType.line, {
-    x: W / 2 + 1.6, y: 3.39, w: W - M - 1.25 - (W / 2 + 1.6), h: -0.52,
-    line: { color: MUTED, width: 1.1, beginArrowType: "triangle" },
-  });
-
-  s.addText(T("Everything runs on one laptop. No cloud. Nothing paid for."), {
-    x: M, y: 4.72, w: COL, h: 0.35, isTextBox: true, margin: 0,
-    fontFace: FONT, fontSize: 12.5, color: MUTED, align: "center",
-  });
-}
-
-// --- 7. Offline first ------------------------------------------------------
-{
-  const s = slide("Power cuts and dead networks",
-    "The requirement to work through power and network cuts is answered by the architecture, not by a policy.");
-  // Narrower column than the other slides, because the handset sits beside
-  // it. Sized with slack: Times sets wider in some renderers and an
-  // overflowing title would run into the body text below.
-  title(s, "The fingerprint is taken at the scene,\non the officer's device, before the file\ngoes anywhere.", { y: 1.0, size: 21, w: 5.95, h: 1.75 });
-
-  const px = W - M - 2.35, py = 0.95, pw = 2.15, ph = 3.3;
-  s.addShape(pres.ShapeType.roundRect, {
-    x: px, y: py, w: pw, h: ph, rectRadius: 0.16,
-    fill: { color: PAPER }, line: { color: RULE, width: 1.2 },
-  });
-  s.addText(T("Custody"), {
-    x: px + 0.18, y: py + 0.22, w: 1.0, h: 0.25, isTextBox: true, margin: 0,
-    fontFace: FONT, fontSize: 11, bold: true, color: INK,
-  });
-  s.addShape(pres.ShapeType.roundRect, {
-    x: px + 1.24, y: py + 0.2, w: 0.72, h: 0.22, rectRadius: 0.11,
-    fill: { color: AMBER_BG }, line: { color: AMBER_BG, width: 0.5 },
-  });
-  s.addText(T("1 pending"), {
-    x: px + 1.24, y: py + 0.215, w: 0.72, h: 0.2, isTextBox: true, margin: 0,
-    fontFace: FONT, fontSize: 8, bold: true, color: AMBER_INK, align: "center",
-  });
-  s.addShape(pres.ShapeType.roundRect, {
-    x: px + 0.16, y: py + 0.62, w: pw - 0.32, h: 1.15, rectRadius: 0.05,
-    fill: { color: PAPER }, line: { color: RULE, width: 0.8 },
-  });
-  s.addText(T("EX-FIELD-004821"), {
-    x: px + 0.3, y: py + 0.74, w: 1.6, h: 0.2, isTextBox: true, margin: 0,
-    fontFace: FONT, fontSize: 10, bold: true, color: INK,
-  });
-  s.addText(T("handset extraction"), {
-    x: px + 0.3, y: py + 0.94, w: 1.6, h: 0.2, isTextBox: true, margin: 0,
-    fontFace: FONT, fontSize: 8.5, color: MUTED,
-  });
-  s.addText(T("A3F1 9C22 7E04"), {
-    x: px + 0.3, y: py + 1.14, w: 1.6, h: 0.2, isTextBox: true, margin: 0,
-    fontFace: FONT, fontSize: 9.5, bold: true, color: GREEN,
-  });
-  s.addShape(pres.ShapeType.roundRect, {
-    x: px + 0.3, y: py + 1.4, w: 1.28, h: 0.22, rectRadius: 0.11,
-    fill: { color: AMBER_BG }, line: { color: AMBER_BG, width: 0.5 },
-  });
-  s.addText(T("Sealed, not synced"), {
-    x: px + 0.3, y: py + 1.415, w: 1.28, h: 0.2, isTextBox: true, margin: 0,
-    fontFace: FONT, fontSize: 8, bold: true, color: AMBER_INK, align: "center",
-  });
-  s.addText(T("Airplane mode. No network at the scene."), {
-    x: px + 0.16, y: py + 2.0, w: pw - 0.32, h: 0.5, isTextBox: true, margin: 0,
-    fontFace: FONT, fontSize: 9, color: MUTED, align: "center",
-  });
-
-  lead(s, "Nothing between the scene and the server can alter the file\nwithout it being detectable.",
-    { y: 3.15, size: 15, w: 5.95, h: 0.8 });
-  note(s, "A question about power cuts and dead networks, answered by architecture rather than by a paragraph.",
-    { y: 4.25, w: 5.95, h: 0.7 });
-}
-
-// --- 8. Large files --------------------------------------------------------
-{
-  const s = slide("One extraction can exceed 100GB",
-    "Do not overclaim. The honesty is worth more than the number.");
-  title(s, "We say which part changed,\nnot just that something did.", { y: 0.95, size: 27, h: 1.25 });
-
-  const cw = 0.92, ch = 0.62, gapx = 0.1;
-  const total = 8 * cw + 7 * gapx;
-  const cx = M, cy = 2.55;
-  for (let i = 0; i < 8; i += 1) {
-    const altered = i === 5;
-    s.addShape(pres.ShapeType.roundRect, {
-      x: cx + i * (cw + gapx), y: cy, w: cw, h: ch, rectRadius: 0.04,
-      fill: { color: altered ? RED : GREEN_BG },
-      line: { color: altered ? RED : GREEN_LINE, width: 1 },
-    });
-    s.addText(T(String(i + 1)), {
-      x: cx + i * (cw + gapx), y: cy + 0.16, w: cw, h: 0.3, isTextBox: true, margin: 0,
-      fontFace: FONT, fontSize: 14, bold: true,
-      color: altered ? "FFFFFF" : GREEN, align: "center",
-    });
+    s.meta.forEach((m, k) =>
+      line(m, { ...T.attrib, size: 13 }, ML, 376 + k * 22, { color: MUTED, w: COL }));
+    return;
   }
-  lead(s, "The file is hashed in 4MB pieces. Part 6 of 8 differs, so the change lies\nbetween byte 20,971,520 and byte 25,165,823.",
-    { y: 3.4, size: 14, h: 0.75 });
-  note(s, "Tested at 30MB and extrapolated. Memory use stays flat as the file grows, because the whole file is never held at once. That is what makes the claim reasonable, not the size of the test file.",
-    { y: 4.25, h: 0.85, size: 11.5 });
-  if (total > COL) throw new Error("chunk strip is wider than the text column");
-}
 
-// --- 9. Demo ---------------------------------------------------------------
-{
-  const s = slide(null, "Six minutes. Follow DEMO.md.");
-  s.addText(T("Demo"), {
-    x: 0, y: H / 2 - 0.75, w: W, h: 1.5, isTextBox: true, margin: 0,
-    fontFace: FONT, fontSize: 60, bold: true, color: INK, align: "center",
-  });
-}
-
-// --- 10. The report --------------------------------------------------------
-{
-  const s = slide("The deliverable",
-    "Replace this slide with a photograph of the printed report in someone's hands.");
-  title(s, "One page. No jargon. No hashes.", { y: 0.95, size: 27, h: 0.6 });
-  lead(s,
-    "Is it unchanged?  Yes.\n" +
-    "How do we know?  A fingerprint was taken at collection and checked again.\n" +
-    "Who has handled it?  Four people, named, with dates.\n" +
-    "Can this list have been edited?  No, and here is why.",
-    { y: 1.75, size: 14.5, h: 1.5 });
-  s.addText(
-    T("\"A process that is technically perfect but cannot be explained in a hearing\nhas not solved the problem.\""),
-    {
-      x: M, y: 3.35, w: COL, h: 0.7, isTextBox: true, margin: 0,
-      fontFace: FONT, fontSize: 14.5, italic: true, color: INK, lineSpacingMultiple: 1.25,
+  if (s.layout === "word") {
+    slide.addText(s.word, {
+      x: 0, y: IN(H / 2 - 52), w: IN(W), h: IN(96),
+      isTextBox: true, margin: 0, align: "center", valign: "top",
+      fontFace: FONT, fontSize: 76, bold: true, color: INK,
     });
-  s.addText(T("the brief"), {
-    x: M, y: 4.02, w: COL, h: 0.3, isTextBox: true, margin: 0,
-    fontFace: FONT, fontSize: 11, color: MUTED,
-  });
-  note(s, "[Replace with a photograph of the printed report in someone's hands.]",
-    { y: 4.5, size: 11 });
-}
+    return;
+  }
 
-// --- 11. Tested on people --------------------------------------------------
-{
-  const s = slide("We tested it on people",
-    "Fill this in with the real result. Do not invent it.");
-  title(s, "We gave the report to someone\noutside computer science.", { y: 1.05, size: 27, h: 1.25 });
-  lead(s, "[What confused them.]", { y: 2.55, size: 16, color: MUTED, h: 0.4 });
-  lead(s, "[What we changed as a result.]", { y: 3.0, size: 16, color: MUTED, h: 0.4 });
-  note(s, "Complete this with the real result before presenting. An accurate account of what a reader did not understand is the only version worth reporting.",
-    { y: 3.8, h: 0.8 });
-}
+  if (s.layout === "split") {
+    const textW = 520;
+    const h = stackHeight(s.blocks);
+    let y = BAND_TOP + (BAND_BOTTOM - BAND_TOP - h) / 2;
+    for (const b of s.blocks) {
+      drawBlock(b, ML, y, textW);
+      y += blockHeight(b) + gapAfter(b);
+    }
+    const pw = 214, ph = 268;
+    DIAGRAMS.phone(W - ML - pw, BAND_TOP + (BAND_BOTTOM - BAND_TOP - ph) / 2, pw, ph);
+    return;
+  }
 
-// --- 12. Limits ------------------------------------------------------------
-{
-  const s = slide("What we did not solve", "Deliver this confidently, not apologetically.");
-  title(s, "Honest limits", { y: 0.82, size: 28, h: 0.55 });
-  const limits = [
-    ["A corrupt collector", "the chain is protected from collection onward, not before it"],
-    ["The device clock", "both clocks are shown, the phone's is not vouched for"],
-    ["Scale", "tested at 30MB, extrapolated, not a real 100GB extraction"],
-    ["Per officer signing", "events are tied to a login, not to a person's key"],
-    ["Storage", "change is proven, deletion is not prevented"],
-    ["Bulk compromise", "full server access could rebuild the whole chain"],
-  ];
-  limits.forEach(([head, sub], i) => {
-    const y = 1.62 + i * 0.53;
-    s.addText(T(head), {
-      x: M, y, w: 2.5, h: 0.35, isTextBox: true, margin: 0,
-      fontFace: FONT, fontSize: 14, bold: true, color: INK,
-    });
-    s.addText(T(sub), {
-      x: M + 2.6, y: y + 0.03, w: COL - 2.6, h: 0.35, isTextBox: true, margin: 0,
-      fontFace: FONT, fontSize: 12, color: MUTED,
-    });
-  });
-}
+  const h = stackHeight(s.blocks);
+  let y = BAND_TOP + (BAND_BOTTOM - BAND_TOP - h) / 2;
+  for (const b of s.blocks) {
+    drawBlock(b, ML, y, COL);
+    y += blockHeight(b) + gapAfter(b);
+  }
+});
 
-// --- 13. Why not a blockchain ----------------------------------------------
-{
-  const s = slide("If asked", "One sentence, then stop.");
-  title(s, "Why not a blockchain?", { y: 1.15, size: 28, h: 0.6 });
-  lead(s, "A blockchain solves distrust between parties with no shared authority.\nA court has one.",
-    { y: 2.15, size: 16, h: 0.8 });
-  lead(s, "A hash chain, append only storage, and periodically published root hashes\ngive the same tamper evidence at a fraction of the complexity, and can be\nexplained to a panel member in a single sentence.",
-    { y: 3.1, size: 16, h: 1.1 });
-}
-
-const offenders = seen.filter((s) => /[—–]/.test(s));
+const offenders = allText().filter((s) => /[—–]/.test(s));
 if (offenders.length) {
   console.error("Em or en dash found in deck copy:");
   for (const o of offenders) console.error(`  ${o.slice(0, 80)}`);
@@ -402,4 +312,4 @@ if (offenders.length) {
 
 await pres.writeFile({ fileName: OUT });
 console.log(`Deck written to ${OUT}`);
-console.log(`  ${n} slides, 16:9, Times New Roman, no em or en dashes`);
+console.log(`  ${DECK.length} slides, 16:9, Times New Roman, no em or en dashes`);
