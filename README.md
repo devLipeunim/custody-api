@@ -262,13 +262,22 @@ unverifiable.
 ## The deck
 
 ```bash
-npm run deck                 # writes deck/custody-deck.pdf
+npm run deck:pptx            # writes deck/custody-deck.pptx, editable
+npm run deck                 # writes deck/custody-deck.pdf, for submission
 DECK_ONLY=7 npm run deck out.pdf   # one slide, for proof reading the layout
 ```
 
-Thirteen slides, 16:9, Times throughout, generated with pdfkit for the same reason the report
-is. The build fails if an em dash or en dash reaches any slide, because the specification
-forbids them and proofreading does not scale.
+Thirteen slides, 16:9, Times New Roman throughout, dark text on light. Both generators take
+the same content from the same specification.
+
+**Edit the PowerPoint, not the generator**, once the deck is being rehearsed: `deck:pptx`
+overwrites the file. The generator exists so the deck can be rebuilt from scratch and so the
+diagrams start as real shapes, not as images. Every slide carries its speaker note in
+PowerPoint's notes pane.
+
+The PDF is generated with pdfkit for the same reason the report is: no browser dependency, and
+Times is a base font so nothing is embedded. Both builds fail if an em dash or en dash reaches
+any slide, because the specification forbids them and proofreading does not scale.
 
 Two slides carry bracketed placeholders and must be completed before presenting: the result of
 the non technical user test, and a photograph of the printed report. The user test result must

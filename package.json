@@ -17,7 +17,8 @@
     "test:api": "node test/api.test.mjs",
     "test:web": "node test/web.test.mjs",
     "test:mobile": "node test/mobile.test.mjs",
-    "deck": "node scripts/make-deck.js"
+    "deck": "node scripts/make-deck.js",
+    "deck:pptx": "node scripts/make-deck-pptx.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -29,5 +30,8 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "pptxgenjs": "^4.0.1"
   }
 }

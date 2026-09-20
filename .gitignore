@@ -9,5 +9,5 @@ node_modules/
 testdata/evidence/case-c/handset-extraction.bin
 testdata/.pristine/
 
-# The deck is committed: it is a submission deliverable, it is 15KB, and a
-# judge should not have to run a build to read it. Regenerate with npm run deck.
+# The deck is committed: it is a deliverable, it is small, and a reader
+# should not have to run a build to open it. Rebuild with npm run deck.
