@@ -67,7 +67,6 @@ cases.get("/:id", async (req, res) => {
   res.json({ ...kase, items });
 });
 
-// Case level chain, which detects an item deleted outright.
 cases.get("/:id/verify", async (req, res) => {
   const result = await verifyCase(req.params.id);
   if (!result) return res.status(404).json({ error: "case not found" });

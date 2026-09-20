@@ -14,7 +14,6 @@ import path from "node:path";
 
 const OUT = process.argv[2] ?? new URL("../deck/custody-deck.pdf", import.meta.url).pathname;
 
-// 16:9
 const W = 960, H = 540;
 const M = 72;
 const INK = "#16160f";

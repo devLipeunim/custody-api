@@ -35,7 +35,6 @@ export function buildReport({ item, events, verification, caseInfo }) {
   const body = (text, opts = {}) =>
     doc.font("Times-Roman").fontSize(11).fillColor("#000").text(text, { width, ...opts });
 
-  // --- Title block -------------------------------------------------------
   doc.font("Times-Bold").fontSize(16).text(`Evidence Item: ${item.reference}`);
   doc.moveDown(0.3);
   doc.font("Times-Roman").fontSize(11).text(
@@ -46,7 +45,6 @@ export function buildReport({ item, events, verification, caseInfo }) {
   doc.moveDown(0.5);
   doc.moveTo(MARGIN, doc.y).lineTo(MARGIN + width, doc.y).strokeColor("#000").lineWidth(0.5).stroke();
 
-  // --- Is it unchanged? --------------------------------------------------
   heading("Is it unchanged?");
   if (verification.fileIntegrity === "intact") {
     body("Yes. The item is identical to what was collected.");
@@ -66,7 +64,6 @@ export function buildReport({ item, events, verification, caseInfo }) {
     );
   }
 
-  // --- How do we know? ---------------------------------------------------
   heading("How do we know?");
   body(
     `A digital fingerprint was taken at the moment of collection, on the collecting ` +
@@ -115,7 +112,6 @@ export function buildReport({ item, events, verification, caseInfo }) {
     doc.font("Times-Roman");
   }
 
-  // --- Who has handled it? -----------------------------------------------
   heading("Who has handled it?");
   // Two columns, so a long entry wraps under the name rather than back to the
   // page margin.
@@ -141,7 +137,6 @@ export function buildReport({ item, events, verification, caseInfo }) {
   }
   doc.x = MARGIN;
 
-  // --- The offline gap, if there is one ----------------------------------
   const firstEvent = events[0];
   const gap = firstEvent && offlineGapSentence(firstEvent.device_time, firstEvent.server_time);
   if (gap) {
@@ -149,7 +144,6 @@ export function buildReport({ item, events, verification, caseInfo }) {
     body(gap);
   }
 
-  // --- Can this list have been edited? -----------------------------------
   heading("Can this list have been edited?");
   if (verification.chainIntegrity === "intact") {
     body(
@@ -172,7 +166,6 @@ export function buildReport({ item, events, verification, caseInfo }) {
     );
   }
 
-  // --- Footer ------------------------------------------------------------
   doc.moveDown(1);
   doc.moveTo(MARGIN, doc.y).lineTo(MARGIN + width, doc.y).strokeColor("#000").lineWidth(0.5).stroke();
   doc.moveDown(0.4);
@@ -182,7 +175,6 @@ export function buildReport({ item, events, verification, caseInfo }) {
     { width }
   );
 
-  // --- Appendix A --------------------------------------------------------
   doc.addPage();
   doc.font("Times-Bold").fontSize(14).text("Appendix A: technical detail");
   doc.moveDown(0.5);

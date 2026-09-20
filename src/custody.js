@@ -199,8 +199,6 @@ export async function syncBatch({ deviceId, items = [], events = [] }) {
     const sealedHere = new Set(sealed.map((s) => s.reference));
 
     for (const ev of events) {
-      // On the transaction client: the item was created earlier in this
-      // transaction and is not visible to any other connection.
       const ref = ev.itemRef ?? ev.itemId ?? ev.itemReference;
 
       if (ev.action === "collected" && sealedHere.has(ref)) {

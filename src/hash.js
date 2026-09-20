@@ -9,7 +9,7 @@ import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { createHash } from "node:crypto";
 
-export const CHUNK_SIZE = 4 * 1024 * 1024; // 4MB
+export const CHUNK_SIZE = 4 * 1024 * 1024;
 export const ZERO_HASH = "0".repeat(64);
 
 export function sha256(input) {
@@ -66,7 +66,7 @@ export function merkleRoot(chunkHashes) {
       if (i + 1 < level.length) {
         next.push(sha256(level[i] + level[i + 1]));
       } else {
-        next.push(level[i]); // odd node promoted
+        next.push(level[i]);
       }
     }
     level = next;

@@ -1,18 +1,16 @@
-// Custody API.
-//
 // Binds 0.0.0.0: the field app reaches this process by LAN address, not by
 // localhost.
 
+import cors from "cors";
 import "dotenv/config";
 import express from "express";
-import cors from "cors";
 import os from "node:os";
-import { pool } from "./db.js";
 import { autoProvision } from "./bootstrap.js";
-import { cases } from "./routes/cases.js";
-import { items } from "./routes/items.js";
-import { custody } from "./routes/custody.js";
+import { pool } from "./db.js";
 import { actors } from "./routes/actors.js";
+import { cases } from "./routes/cases.js";
+import { custody } from "./routes/custody.js";
+import { items } from "./routes/items.js";
 
 const app = express();
 const PORT = Number(process.env.PORT || 4000);

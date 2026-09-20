@@ -7,7 +7,6 @@ import { verifyChain } from "../chain.js";
 
 export const items = Router();
 
-// Seal a new evidence item. Metadata only; the file does not travel.
 items.post("/", async (req, res, next) => {
   try {
     const result = await tx((client) => sealItem(client, req.body ?? {}));
@@ -15,7 +14,6 @@ items.post("/", async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// Record that the exhibit has reached the evidence store.
 items.post("/:id/deposit", async (req, res, next) => {
   try {
     const { storagePath, actorRef, note } = req.body ?? {};
@@ -65,7 +63,6 @@ items.get("/:id/verify", async (req, res) => {
   res.json(result);
 });
 
-// One entry per chunk, for rendering the chunk map.
 items.get("/:id/chunks", async (req, res) => {
   const item = await loadItem(req.params.id);
   if (!item) return res.status(404).json({ error: "item not found" });

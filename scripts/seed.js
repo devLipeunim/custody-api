@@ -95,7 +95,6 @@ await tx(async (client) => {
         ]
       );
 
-      // Build the custody chain for this item, link by link.
       let prev = ZERO_HASH;
       const seqToEventId = new Map();
       const pendingCorrections = [];
@@ -136,7 +135,6 @@ await tx(async (client) => {
 
       await client.query("UPDATE items SET chain_head = $1 WHERE id = $2", [prev, itemId]);
 
-      // One case level event per item creation.
       const ceHash = caseEventHash({
         prevHash: casePrev,
         caseId,
