@@ -9,5 +9,7 @@ node_modules/
 testdata/evidence/case-c/handset-extraction.bin
 testdata/.pristine/
 
-# The deck is committed: it is a deliverable, it is small, and a reader
-# should not have to run a build to open it. Rebuild with npm run deck.
+# Built documents: the deck, the write-up and their Word versions. Generated
+# from scripts/deck-content.js and scripts/writeup-content.js, which are the
+# source. Rebuild with npm run deck, deck:pptx, writeup and docx.
+deck/
