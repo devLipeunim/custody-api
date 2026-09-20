@@ -242,8 +242,6 @@ kv("Storage", "We prove change. We do not prevent deletion of the underlying fil
 kv("Bulk compromise", "An attacker with full database and server access could rebuild the entire " +
   "chain consistently. Publishing periodic root hashes to an external location is the mitigation. " +
   "We describe it; we did not build it.", 112);
-kv("Interface testing", "The field app's logic is covered by the parity and sync suites, but its " +
-  "interface was not verified on a physical handset.", 112);
 
 h1("10.  Running it");
 code(
