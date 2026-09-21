@@ -20,7 +20,8 @@
     "deck": "node scripts/make-deck.js",
     "deck:pptx": "node scripts/make-deck-pptx.js",
     "writeup": "node scripts/make-writeup.js",
-    "docx": "node scripts/make-docx.js"
+    "docx": "node scripts/make-docx.js",
+    "submission": "node scripts/make-submission.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
