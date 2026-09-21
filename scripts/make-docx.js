@@ -13,7 +13,7 @@ import {
 import { writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { WRITEUP, TITLE, SUBTITLE, BYLINE } from "./writeup-content.js";
+import { WRITEUP, TITLE, SUBTITLE, BYLINE, TEAM } from "./writeup-content.js";
 import { DECK } from "./deck-content.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -124,7 +124,8 @@ function writeupChildren() {
   const children = [
     new Paragraph({ spacing: { after: 40 }, children: [run(TITLE, { bold: true, size: 38 })] }),
     new Paragraph({ spacing: { after: 60 }, children: [run(SUBTITLE, { size: 22 })] }),
-    new Paragraph({ spacing: { after: 120 }, children: [run(BYLINE, { size: 18, color: MUTED })] }),
+    new Paragraph({ spacing: { after: 20 }, children: [run(BYLINE, { size: 18, color: MUTED })] }),
+    new Paragraph({ spacing: { after: 120 }, children: [run(TEAM, { size: 18, color: MUTED })] }),
     rule(),
   ];
 

@@ -9,7 +9,7 @@ import { createWriteStream } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { WRITEUP, TITLE, SUBTITLE, BYLINE } from "./writeup-content.js";
+import { WRITEUP, TITLE, SUBTITLE, BYLINE, TEAM } from "./writeup-content.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const OUT = process.argv[2] ?? path.join(here, "../deck/custody-technical-writeup.pdf");
@@ -72,6 +72,8 @@ doc.font("Times-Bold").fontSize(19).fillColor(INK).text(TITLE);
 doc.font("Times-Roman").fontSize(11).text(SUBTITLE);
 doc.moveDown(0.22);
 doc.font("Times-Roman").fontSize(9).fillColor(MUTED).text(BYLINE);
+doc.moveDown(0.12);
+doc.font("Times-Roman").fontSize(9).fillColor(MUTED).text(TEAM);
 doc.moveDown(0.3);
 doc.moveTo(M, doc.y).lineTo(M + W, doc.y).lineWidth(0.5).strokeColor(RULE).stroke();
 doc.moveDown(0.3);

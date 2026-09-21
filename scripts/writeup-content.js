@@ -16,8 +16,39 @@ export const TITLE = "Custody";
 export const SUBTITLE = "Proving digital evidence has not been changed";
 export const BYLINE =
   "Technical write-up.  Team Captain.  ICSC 2026 Universities Hackathon, Track H.";
+export const TEAM = [
+  "ANIAH, Moses Lipeunim",
+  "ADESHINA, Ayomide Oluwatofunmi",
+  "ALUGBIN, Boluwatife Godwin",
+  "MARKSON, Favour",
+  "OLADAPO, Olalekan Olanrewaju",
+].join(".  ");
 
-h1("1.  Overview");
+h1("1.  Problem");
+body(
+  "Digital evidence moves between a flash drive, an email attachment and a shared machine " +
+  "before it reaches a hearing that may sit eleven months after collection. By that point the " +
+  "file cannot be distinguished from a modified copy of itself, and the record of who handled " +
+  "it is a paper form, where one exists at all. The difficulty is not that evidence is commonly " +
+  "altered. It is that nobody can demonstrate that it was not."
+);
+gap(0.25);
+body("Three settings share the problem and differ only in the material:");
+gap(0.2);
+kv("Cybercrime", "Phone extractions and server logs.", 116);
+kv("Fraud investigation", "Transaction records and audit logs.", 116);
+kv("Disciplinary panel", "Message exports and access logs.", 116);
+gap(0.1);
+body(
+  "Two measures answer it. A fingerprint of the file is recorded at the point of collection, on " +
+  "the collecting officer's own device, before the file has been anywhere else, so a later copy " +
+  "can be compared against it rather than against recollection. Every entry in the handling " +
+  "record is then bound to the entry before it, so an entry cannot be removed from the middle " +
+  "of the sequence without the break being visible at that point. The remainder of this " +
+  "document describes how both are implemented and what they do not cover."
+);
+
+h1("2.  Overview");
 body(
   "Custody is a chain of custody system for digital evidence. It records a cryptographic " +
   "fingerprint of an evidence file at the point of collection, maintains an append only log of " +
@@ -47,7 +78,7 @@ body(
   "records the fingerprint before any network operation occurs."
 );
 
-h1("2.  Integrity model");
+h1("3.  Integrity model");
 body(
   "Two properties are verified independently: whether the evidence file matches the fingerprint " +
   "recorded at collection, and whether the custody record itself has been modified. The two are " +
@@ -95,7 +126,7 @@ body(
   "trigger rejects."
 );
 
-h1("3.  Chunked hashing");
+h1("4.  Chunked hashing");
 body(
   "Files are processed in fixed 4 MB chunks. Each chunk is hashed independently and a binary " +
   "Merkle tree is constructed over the ordered chunk hashes, with unpaired nodes promoted " +
@@ -124,7 +155,7 @@ body(
   "hash carried across buffer boundaries. Equivalence is asserted by a dedicated test suite."
 );
 
-h1("4.  Collection and synchronisation");
+h1("5.  Collection and synchronisation");
 body(
   "Collection executes entirely on the device: the file is hashed, the record is written to local " +
   "SQLite storage, and a collection event is queued. No network operation occurs in this path. " +
@@ -155,7 +186,7 @@ kv("altered", "It does not. Affected chunk indices and byte range are returned."
 kv("awaiting_file", "Fingerprint recorded, exhibit not yet deposited.", 92);
 kv("missing", "The exhibit was deposited and is no longer present in storage.", 92);
 
-h1("5.  Reporting");
+h1("6.  Reporting");
 body(
   "The report is a single page and is generated server side as a PDF. It states whether the item " +
   "is unchanged, how that was established, who handled it and in what order, and whether the " +
@@ -168,7 +199,7 @@ body(
   "Automated tests assert that neither form appears in the report or in the dashboard."
 );
 
-h1("6.  Testing");
+h1("7.  Testing");
 body(
   "246 assertions across seven suites. Assertions cover response field names as well as " +
   "behaviour, so an interface change between components is detected by the suite rather than at " +
@@ -191,7 +222,7 @@ kv("Dashboard", "53 assertions against served markup, including the absence of e
 kv("Acceptance", "23 assertions. End to end execution including deliberate file and record " +
   "modification, item deletion, report generation and state reset.", 104);
 
-h1("7.  Test data");
+h1("8.  Test data");
 body(
   "All data in the system is synthetic and was generated for this project. It contains no real " +
   "persons, cases, accounts, records or personal data. Names, badge numbers and account numbers " +
@@ -200,7 +231,7 @@ body(
   "the repository."
 );
 
-h1("8.  Constraints");
+h1("9.  Constraints");
 kv("Pre-collection tampering", "Modification before the fingerprint is recorded produces a valid " +
   "chain over altered evidence. The system establishes integrity from collection onward only.", 118);
 kv("Device clock", "Offline timestamps originate from the device and may be incorrect. Both " +
@@ -221,7 +252,7 @@ body(
   "chain with append only storage provides equivalent tamper evidence at lower operational cost."
 );
 
-h1("9.  Running the system");
+h1("10.  Running the system");
 code(
   "brew services start postgresql@16      # or: sudo service postgresql start\n" +
   "cd hackathonBackend && npm install && npm run demo:reset && npm run dev     # API  :4000\n" +
