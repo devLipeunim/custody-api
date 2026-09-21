@@ -24,14 +24,26 @@ const evidenceRoot = process.env.EVIDENCE_ROOT || path.join(root, "testdata");
 const largeFile = path.join(evidenceRoot, "evidence/case-c/handset-extraction.bin");
 
 async function reason() {
-  if (!existsSync(largeFile)) return "evidence file absent";
+  let cases;
   try {
     const { rows } = await pool.query("SELECT COUNT(*)::int AS n FROM cases");
-    if (rows[0].n === 0) return "no cases present";
+    cases = rows[0].n;
   } catch (err) {
     if (err.code === "42P01") return "schema absent"; // undefined_table
     throw err;
   }
+
+  // Provisioning reloads the schema, which drops every table. A database that
+  // holds cases is never reseeded, whatever else is missing: on a host with an
+  // ephemeral filesystem the evidence file is absent after each restart, and
+  // treating that as grounds for a reseed would destroy collected evidence
+  // every time the service woke. A regenerated evidence file no longer matches
+  // the fingerprints recorded against it, so those items verify as altered.
+  // That is visible and recoverable. Deleting the record is neither.
+  if (cases > 0) return null;
+
+  if (!existsSync(largeFile)) return "evidence file absent";
+  if (cases === 0) return "no cases present";
   return null;
 }
 
