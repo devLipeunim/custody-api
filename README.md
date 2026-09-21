@@ -6,8 +6,8 @@ handling record has changed since.
 
 Built for ICSC 2026 Universities Hackathon, Track H, by Team Captain.
 
-- **Dashboard:** [`hackathonWebApp`](../hackathonWebApp) (Next.js)
-- **Field app:** [`hackathonMobile`](../hackathonMobile) (React Native, Expo)
+- **Dashboard:** [`custody-web`](https://github.com/devLipeunim/custody-web) (Next.js)
+- **Field app:** [`custody-field`](https://github.com/devLipeunim/custody-field) (React Native, Expo)
 
 ---
 
